@@ -1504,11 +1504,13 @@ fi
 
   if (cloudIdx === 0) {
     console.log(`\n  ${green('✓')} Cloud deployment noted.\n`);
-    console.log(dim('  When ready, run ') + cyan('npm run agent') + dim(' and select the CLOUD agent.'));
-    console.log(dim('  It will read your stack and suggest the best platform options for your project.\n'));
+    console.log(dim('  When ready, open a terminal inside your project folder and run:'));
+    console.log(`  ${cyan('npm run agent')} ${dim('- then select the CLOUD agent from the list.')}`);
+    console.log(dim('  It will read your stack and suggest the best platform options.\n'));
   } else {
     console.log(`\n  ${green('✓')} Noted - no cloud deployment for now.\n`);
-    console.log(dim('  You can always add it later by running ') + cyan('npm run agent') + dim(' and selecting the CLOUD agent.'));
+    console.log(dim('  You can always add it later - open a terminal inside your project folder and run:'));
+    console.log(`  ${cyan('npm run agent')} ${dim('- then select the CLOUD agent from the list.')}`);
     console.log(dim('  No changes to your project are needed before that point.\n'));
   }
 
