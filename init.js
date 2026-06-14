@@ -1367,9 +1367,9 @@ fi
   console.log(`  ${bold('How do you want to build?')}\n`);
 
   console.log(`  ${dim('1.')} ${bold('Multi-Agent Driven Orchestration')}`);
-  console.log(`${dim('     · Every task should start with npm run agent')}`);
+  console.log(dim('     · Every task should start with ') + cyan('npm run agent'));
   console.log(`${dim('     · Each agent runs in its own git worktree — an isolated branch')}`);
-  console.log(`${dim('       and folder that merges back into main via npm run complete')}`);
+  console.log(dim('       and folder that merges back into main via ') + cyan('npm run complete'));
   console.log(`${dim('     · Faster builds and lower token spend than a single long session')}`);
   console.log(`${yellow('     ⚠ If you commit directly to main yourself, you bypass the framework')}`);
   console.log(`${yellow('       and break task tracking for any active agent branches')}\n`);
@@ -1462,9 +1462,9 @@ fi
     separator();
     console.log(`\n  ${bold('How do you want to build?')}\n`);
     console.log(`  ${dim('1.')} ${bold('Multi-Agent Driven Orchestration')}`);
-    console.log(`${dim('     · Every task should start with npm run agent')}`);
+    console.log(dim('     · Every task should start with ') + cyan('npm run agent'));
     console.log(`${dim('     · Each agent runs in its own git worktree — an isolated branch')}`);
-    console.log(`${dim('       and folder that merges back into main via npm run complete')}`);
+    console.log(dim('       and folder that merges back into main via ') + cyan('npm run complete'));
     console.log(`${dim('     · Faster builds and lower token spend than a single long session')}`);
     console.log(`${yellow('     ⚠ If you commit directly to main yourself, you bypass the framework')}`);
     console.log(`${yellow('       and break task tracking for any active agent branches')}\n`);
