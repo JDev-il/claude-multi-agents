@@ -1081,6 +1081,7 @@ const main = async () => {
   fs.copyFileSync(path.join(TEMPLATES, 'CLAUDE.md'),    path.join(ROOT, 'CLAUDE.md'));
   fs.copyFileSync(path.join(TEMPLATES, 'CONTRACTS.md'), path.join(ROOT, 'CONTRACTS.md'));
   fs.copyFileSync(path.join(TEMPLATES, 'TASKS_HISTORY.md'), path.join(ROOT, 'TASKS_HISTORY.md'));
+  fs.copyFileSync(path.join(TEMPLATES, 'CLOUD_STATE.md'), path.join(ROOT, 'CLOUD_STATE.md'));
   console.log(`  ${green('✓')} Templates copied`);
 
   // ── Copy workflow scripts ────────────────────────────────────────────────────
@@ -1134,7 +1135,7 @@ const main = async () => {
   // Remove template-specific gitignore entries so generated files can be committed
   const gitignorePath = path.join(ROOT, '.gitignore');
   let gitignoreContent = fs.readFileSync(gitignorePath, 'utf8');
-  ['client/', 'backend/', 'shared/', 'CLAUDE.md', 'CONTRACTS.md', 'BUILD_STATE.md', 'TASKS_HISTORY.md'].forEach(entry => {
+  ['client/', 'backend/', 'shared/', 'CLAUDE.md', 'CONTRACTS.md', 'BUILD_STATE.md', 'TASKS_HISTORY.md', 'CLOUD_STATE.md'].forEach(entry => {
     gitignoreContent = gitignoreContent.replace(`\n${entry}`, '');
     gitignoreContent = gitignoreContent.replace(`${entry}\n`, '');
     gitignoreContent = gitignoreContent.replace(entry, '');
