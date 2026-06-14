@@ -1486,6 +1486,32 @@ fi
     fs.writeFileSync(path.join(RUNTIME_DIR, '.config.json'), JSON.stringify(cfg, null, 2), 'utf8');
   } catch { /* best-effort */ }
 
+  // ── Cloud deployment intent ──────────────────────────────────────────────────
+
+  separator();
+  console.log(`\n  ${bold('Do you plan to deploy this project to a cloud platform?')}\n`);
+
+  const cloudIdx = await arrowSelect('Cloud deployment?', [
+    { label: 'Yes - I plan to deploy to a cloud platform' },
+    { label: 'No  - I will run it locally or decide later' },
+  ], rl);
+
+  try {
+    const cfg = JSON.parse(fs.readFileSync(path.join(RUNTIME_DIR, '.config.json'), 'utf8'));
+    cfg.cloudDeployment = cloudIdx === 0 ? 'yes' : 'no';
+    fs.writeFileSync(path.join(RUNTIME_DIR, '.config.json'), JSON.stringify(cfg, null, 2), 'utf8');
+  } catch { /* best-effort */ }
+
+  if (cloudIdx === 0) {
+    console.log(`\n  ${green('✓')} Cloud deployment noted.\n`);
+    console.log(dim('  When ready, run ') + cyan('npm run agent') + dim(' and select the CLOUD agent.'));
+    console.log(dim('  It will read your stack and suggest the best platform options for your project.\n'));
+  } else {
+    console.log(`\n  ${green('✓')} Noted - no cloud deployment for now.\n`);
+    console.log(dim('  You can always add it later by running ') + cyan('npm run agent') + dim(' and selecting the CLOUD agent.'));
+    console.log(dim('  No changes to your project are needed before that point.\n'));
+  }
+
   if (selected.next === 'launch') {
     const launchConfirm = await arrowConfirm('Ready to launch your first task?', rl);
     if (launchConfirm) {
