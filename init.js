@@ -768,37 +768,48 @@ const main = async () => {
       return 'done';
     };
 
-    if (prompts && process.stdin.isTTY) {
-      let lockLoop = true;
-      while (lockLoop) {
-        separator();
-        console.log(`\n${yellow('  This project has already been initialized.')}`);
-        console.log(dim(`  Initialized on: ${ts}\n`));
+    separator();
+    console.log(`\n${yellow('  This project has already been initialized.')}`);
+    console.log(dim(`  Initialized on: ${ts}\n`));
+    console.log(dim(`  To start a task:       `) + cyan('npm run agent'));
+    console.log(dim(`  To restart an agent:   `) + cyan('npm run restart'));
+    console.log(dim(`  To wipe everything:    `) + cyan('npm run reset') + '\n');
 
-        const res = await prompts({
-          type: 'select',
-          name: 'value',
-          message: 'What would you like to do?',
+    if (prompts && process.stdin.isTTY) {
+      const res = await prompts({
+        type:    'select',
+        name:    'value',
+        message: 'What would you like to do?',
+        choices: [
+          { title: 'Re-initialize project', description: 'Wipe everything and start fresh', value: '1' },
+          { title: 'Cancel',                                                                 value: '2' },
+        ],
+      }, { onCancel: () => process.exit(0) });
+
+      if (res.value === '1') {
+        separator();
+        console.log(yellow('  ⚠ This will permanently delete the entire project.'));
+        console.log(dim('  All branches, worktrees, files and git history will be removed.\n'));
+        const confirm = await prompts({
+          type:    'select',
+          name:    'value',
+          message: 'Are you sure?',
           choices: [
-            { title: 'Resume', description: 'Pick up where you left off', value: '1' },
-            { title: 'Restart process', description: 'Wipe and restart a specific process', value: '2' },
-            { title: 'Cancel', value: '3' },
+            { title: red('Yes - wipe everything and re-initialize'), value: 'yes' },
+            { title: 'No - Cancel',                                  value: 'no'  },
           ],
         }, { onCancel: () => process.exit(0) });
-
-        if (res.value === '1') {
-          const child = spawn('node', [path.join(ROOT, '.workflow', 'agent.js')], { stdio: 'inherit', cwd: ROOT });
-          child.on('exit', (code) => process.exit(code));
-          return;
-        } else if (res.value === '2') {
-          const restartResult = await showRestartProcess();
-          if (restartResult === 'back') continue; // Back — show menu again
-          lockLoop = false;
-          return;
-        } else {
+        if (confirm.value !== 'yes') {
           console.log(dim('\n  Cancelled.\n'));
           process.exit(0);
         }
+        const { spawn: sp } = require('child_process');
+        const resetChild = sp('node', [path.join(ROOT, '.workflow', 'reset.js')], { stdio: 'inherit', cwd: ROOT });
+        resetChild.on('exit', code => process.exit(code ?? 0));
+        return;
+      } else {
+        console.log(dim('\n  Cancelled.\n'));
+        process.exit(0);
       }
     }
   }
@@ -1269,6 +1280,7 @@ If a dependency is not met:
     scripts: {
       init:     'multi-agents init',
       agent:    'node .workflow/agent.js',
+      restart:  'node .workflow/restart.js',
       reset:    'node .workflow/reset.js',
       complete: 'node .workflow/complete.js',
     },
