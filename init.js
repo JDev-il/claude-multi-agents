@@ -200,9 +200,9 @@ const FRAMEWORK_VERSION_FALLBACK = {
   'Nuxt':       ['3',  '2',  null],
   'SvelteKit':  ['2',  '1',  null],
   'Remix':      ['2',  '1',  null],
-  'Vite+React': ['6',  '5',  '4'],
+  'Vite+React': ['8',  '7',  '6'],
   'NestJS':     ['11', '10', '9' ],
-  'Express':    ['5',  '4',  null],
+  'Express':    ['5',  '4'],
   'Fastify':    ['5',  '4',  null],
   'FastAPI':    ['0.115', '0.111', '0.104'],
   'Django':     ['5.1', '4.2', '3.2'],
@@ -268,7 +268,7 @@ const STATE_OPTIONS = {
 
 const UI_OPTIONS = {
   'Next.js':    ['shadcn/ui', 'Radix UI', 'MUI', 'Chakra UI', 'Ant Design'],
-  'Vite+React': ['shadcn/ui', 'Radix UI', 'MUI', 'Chakra UI', 'Ant Design'],
+  'Vite+React': ['Radix UI', 'MUI', 'Chakra UI', 'Ant Design'],
   'Remix':      ['shadcn/ui', 'Radix UI', 'MUI', 'Chakra UI', 'Ant Design'],
   'Angular':    ['Angular Material', 'PrimeNG', 'Clarity'],
   'Nuxt':       ['Vuetify', 'PrimeVue', 'Naive UI'],
@@ -282,6 +282,15 @@ const STYLING_OPTIONS = [
   'SCSS / SASS',
   'UnoCSS',
 ];
+
+const DB_OPTIONS = ['PostgreSQL', 'MySQL', 'MongoDB', 'SQLite', 'Skip (agent will propose when needed)'];
+
+const ORM_OPTIONS_BY_DB = {
+  'PostgreSQL': ['Prisma', 'TypeORM', 'Drizzle', 'Sequelize', 'raw pg driver', 'Skip (agent will propose when needed)'],
+  'MySQL':      ['Prisma', 'TypeORM', 'Drizzle', 'Sequelize', 'raw mysql2 driver', 'Skip (agent will propose when needed)'],
+  'MongoDB':    ['Mongoose', 'Prisma', 'raw MongoDB driver', 'Skip (agent will propose when needed)'],
+  'SQLite':     ['Prisma', 'Drizzle', 'better-sqlite3', 'Skip (agent will propose when needed)'],
+};
 
 const ORM_OPTIONS = {
   'NestJS':   ['TypeORM', 'Prisma', 'MikroORM', 'Drizzle'],
@@ -857,7 +866,8 @@ const main = async () => {
       label: i === 0 ? `v${v}  ${dim('(latest)')}` : `v${v}`,
       value: v,
     }));
-    const vIdx = await arrowSelect(`* ${clientFw.value} version:`, versionChoices, rl, true);
+    const versionLabel = clientFw.value === 'Vite+React' ? '* Vite version:' : `* ${clientFw.value} version:`;
+    const vIdx = await arrowSelect(versionLabel, versionChoices, rl, true);
     if (vIdx === versionChoices.length) { restartIfBack(BACK); return; }
     clientFwVersion = clientVersions[vIdx];
   }
@@ -922,8 +932,19 @@ const main = async () => {
       }
     }
 
-    backendOrm  = backendFw ? await selectOptional('ORM / database layer:', ORM_OPTIONS[backendFw] || []) : null;
-    if (restartIfBack(backendOrm)) return;
+    // DB type
+    let backendDb = null;
+    if (backendFw) {
+      backendDb = await selectOptional('Database type:', DB_OPTIONS);
+      if (restartIfBack(backendDb)) return;
+    }
+    // ORM / query layer (filtered by DB type)
+    backendOrm = null;
+    if (backendFw && backendDb && backendDb !== 'Skip (agent will propose when needed)') {
+      const ormChoices = ORM_OPTIONS_BY_DB[backendDb] || ORM_OPTIONS[backendFw] || [];
+      backendOrm = await selectOptional('ORM / query layer:', ormChoices);
+      if (restartIfBack(backendOrm)) return;
+    }
     backendAuth = backendFw ? await selectOptional('Auth strategy:', AUTH_OPTIONS[backendFw] || []) : null;
     if (restartIfBack(backendAuth)) return;
     backendType = backendFw ? 'separate' : null;
@@ -1500,17 +1521,11 @@ fi
   } catch { /* best-effort */ }
 
   if (selected.next === 'launch') {
-    const launchConfirm = await arrowConfirm('Ready to launch your first task?', rl);
-    if (launchConfirm) {
-      rl.close();
-      console.log('');
-      const child = spawn('node', [path.join(ROOT, '.workflow', 'agent.js')], {
-        stdio: 'inherit',
-        cwd: ROOT,
-      });
-      child.on('exit', (code) => process.exit(code));
-      return;
-    }
+    separator();
+    console.log(`\n  ${bold(green('  Project ready!'))}\n`);
+    console.log(`  Run ${cyan('npm run agent')} to start your first task.\n`);
+    rl.close();
+    return;
   }
 
   console.log('');
