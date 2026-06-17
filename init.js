@@ -1014,32 +1014,32 @@ const main = async () => {
   }
 
 
-  // ── Terminal selection ────────────────────────────────────────────────────────
+  // ── Terminal detection ────────────────────────────────────────────────────────
 
-  const TERMINAL_OPTIONS = process.platform === 'darwin'
-    ? [
-        { name: 'Terminal.app',  cmd: 'Terminal' },
-        { name: 'iTerm2',        cmd: 'iTerm2' },
-        { name: 'Warp',          cmd: 'Warp' },
-        { name: 'Other / skip',  cmd: null },
-      ]
-    : process.platform === 'win32'
-    ? [
-        { name: 'Command Prompt', cmd: 'cmd' },
-        { name: 'PowerShell',     cmd: 'powershell' },
-        { name: 'Other / skip',   cmd: null },
-      ]
-    : [
-        { name: 'gnome-terminal', cmd: 'gnome-terminal' },
-        { name: 'xterm',          cmd: 'xterm' },
-        { name: 'Other / skip',   cmd: null },
+  const detectTerminal = () => {
+    const platform = process.platform;
+    if (platform === 'darwin') {
+      const apps = [
+        { name: 'iTerm2',       cmd: 'iTerm2',   path: '/Applications/iTerm.app' },
+        { name: 'Warp',         cmd: 'Warp',     path: '/Applications/Warp.app' },
+        { name: 'Terminal.app', cmd: 'Terminal', path: '/System/Applications/Utilities/Terminal.app' },
       ];
+      return apps.find(a => fs.existsSync(a.path)) || { name: 'Terminal.app', cmd: 'Terminal' };
+    } else if (platform === 'win32') {
+      const wtPath = process.env.LOCALAPPDATA + '\\Microsoft\\WindowsApps\\wt.exe';
+      if (fs.existsSync(wtPath)) return { name: 'Windows Terminal', cmd: 'wt' };
+      return { name: 'Command Prompt', cmd: 'cmd' };
+    } else {
+      const terms = ['gnome-terminal', 'konsole', 'xterm'];
+      for (const t of terms) {
+        try { execSync('which ' + t, { stdio: 'pipe' }); return { name: t, cmd: t }; } catch {}
+      }
+      return { name: 'xterm', cmd: 'xterm' };
+    }
+  };
 
-  const termIdx = await arrowSelect('* Preferred terminal (for Claude Code CLI):', TERMINAL_OPTIONS.map(t => ({ label: t.name })), rl);
-  const termChoice = TERMINAL_OPTIONS[termIdx];
-  console.log(`  ${green('✓')} ${termChoice.name}`);
-
-  separator();
+  const termChoice = detectTerminal();
+  console.log(dim('  Terminal detected: ') + green(termChoice.name));
 
   // ── Summary ─────────────────────────────────────────────────────────────────
 
