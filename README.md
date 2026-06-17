@@ -1,4 +1,4 @@
-# Multi Agents
+# multi-agents-cli
 
 A structured workflow tool that orchestrates multiple Claude Code agents working in parallel - each isolated in its own git worktree, owning a specific scope of the codebase.
 
@@ -26,12 +26,11 @@ npm run agent
 
 `multi-agents init` will:
 - Guide you through project name, stack, IDE, and build trajectory using arrow-key selection
-- Fetch all templates and workflow scripts from multi-agents-core
-- Generate `BUILD_STATE.md`, `CONTRACTS.md`, `CLAUDE.md`
-- Generate `.scaffold/.paths.json` with expected framework paths
-- Initialize agent tracking (`.scaffold/.tracking.json`)
-- Install `prompts` dependency for arrow-key navigation
-- Set up git remote handling (first agent session handles this automatically)
+- Generate `BUILD_STATE.md`, `CONTRACTS.md`, `CLAUDE.md`, `CLOUD_STATE.md`
+- Generate `shared/wiring.config.json` with client/backend env var conventions
+- Write `.scaffold/.config.json`, `.scaffold/.tracking.json`, `.scaffold/scope-policy.json`
+- Copy agent instruction files and framework scaffold guides from the bundled `core/`
+- Initialize git, install pre-commit hook, and create the initial commit
 
 ---
 
@@ -39,11 +38,13 @@ npm run agent
 
 | Command | Purpose |
 |---------|---------|
-| `npm run init` | Re-run initialization or restart a process |
 | `npm run agent` | Start a new task with an agent |
-| `npm run complete` | Agent finished - merge and move on |
+| `npm run complete` | Merge agent work into main and update project state |
+| `npm run restart` | Wipe and relaunch a specific agent |
+| `npm run reset` | Nuclear wipe - removes all worktrees and resets project state |
+| `npm run init` | Re-run initialization (locked after first run) |
 
-All three commands self-relocate to the repo root via `git rev-parse --git-common-dir`. Run them from the worktree terminal, the repo root, or anywhere inside the git tree.
+All commands self-relocate to the repo root via `git rev-parse --git-common-dir`. Run them from the worktree terminal, the repo root, or anywhere inside the git tree.
 
 ---
 
@@ -55,19 +56,22 @@ All three commands self-relocate to the repo root via `git rev-parse --git-commo
 npm run agent
 ```
 
-Select scope (client/backend/shared) then agent then describe the task.
-The workspace opens in your IDE automatically.
+Select scope (client / backend / shared), then agent, then describe the task.
+The workspace opens in your IDE and Claude Code CLI launches automatically.
 
 The agent reads `TASK.md` and executes autonomously.
 
-### 2. Agent completes the task
+### 2. Complete a task
 
-The agent commits its work and runs `npm run complete` autonomously.
-This merges the branch into main, updates `BUILD_STATE.md`, and clears the tracking slot.
+```bash
+npm run complete
+```
+
+Validates scope boundaries via `git diff`, merges the branch into main, updates `BUILD_STATE.md` and `TASKS_HISTORY.md`, and clears the tracking slot.
 
 ### 3. Repeat
 
-`npm run complete` chains back to `npm run agent`. Pick the next agent and continue building.
+Pick the next agent and continue building.
 
 ---
 
@@ -77,11 +81,9 @@ Choose during `multi-agents init`:
 
 **Multi-Agent Driven Orchestration** *(recommended)*
 Every task starts with `npm run agent`. Each agent works in its own git worktree - an isolated branch and folder that merges back into main via `npm run complete`. Faster builds and lower token spend than a single long session.
-If you commit directly to main yourself, you bypass the framework and break task tracking for any active agent branches.
 
 **Shared Orchestration**
 You and agents co-build - each owning a defined part of the codebase. Agent tasks run in git worktrees; your work happens directly in the project. Define boundaries before work begins.
-If you and an agent touch the same file, expect merge conflicts.
 
 ---
 
@@ -103,7 +105,7 @@ Each framework has a dedicated scaffold instruction file in `.frameworks/client/
 
 | Agent | Default task | Requires |
 |-------|-------------|---------|
-| `UI` | Scaffolds full project structure | - |
+| `UI` | Scaffolds full project structure + client wiring config | - |
 | `LOGIC` | State management, API integration, hooks | UI done |
 | `FORMS` | Form components, validation, submission | UI done |
 | `ROUTING` | Page routing, navigation, URL structure | UI done |
@@ -114,35 +116,78 @@ Each framework has a dedicated scaffold instruction file in `.frameworks/client/
 
 | Agent | Default task | Requires |
 |-------|-------------|---------|
-| `API` | REST/GraphQL endpoints - start here | - |
+| `INIT` | Scaffolds backend structure, wiring config, CONTRACTS.md | - |
+| `API` | REST/GraphQL endpoint implementation | INIT done |
 | `LOGIC` | Business logic, services, data processing | API done |
 | `AUTH` | Authentication, authorization, sessions | API done |
-| `DB` | Database schemas, migrations, queries | - |
+| `DB` | Database schemas, migrations, queries | INIT done |
 | `EVENTS` | Event queues, pub/sub, webhooks | API done |
 | `JOBS` | Background jobs, scheduled tasks | API done |
 | `TESTING` | API and integration tests | API done |
 
 ### Shared
 
-| Agent | Default task |
-|-------|-------------|
-| `SECURITY` | Shared auth utilities, encryption, validation |
+| Agent | Default task | Requires |
+|-------|-------------|---------|
+| `CLOUD` | Deployment config, CI/CD, environment wiring | Client + backend done |
+| `SECURITY` | Shared auth utilities, encryption, validation | - |
 
-Start with UI (client) or API (backend). The launcher recommends the correct next agent dynamically based on what is already completed.
+Start with `UI` (client) or `INIT` (backend). The launcher recommends the correct next agent dynamically based on what is already completed.
 
 ---
 
-## Running the App
+## Scope Validation
 
-After agents complete their tasks and merge into main:
+Every agent merge is validated before it touches main.
 
-```bash
-cd client
-npm install
-npm run dev
+When a worktree is created, `agent.js` writes a `scope.json` file declaring the agent's identity and policy. When `npm run complete` runs, it:
+
+1. Reads `scope.json` from the worktree
+2. Loads `.scaffold/scope-policy.json` (written at init time)
+3. Runs `git diff --name-only main...HEAD` to get every changed file
+4. Blocks the merge if any file falls outside the allowed paths for that scope
+
+**Policy summary:**
+
+| Scope | Allowed | Blocked |
+|-------|---------|---------|
+| client | `client/**` | `backend/**`, `shared/**`, `CONTRACTS.md` |
+| client/UI (scaffold only) | `client/**`, `shared/wiring.config.json` | `backend/**`, `CONTRACTS.md` |
+| backend | `backend/**` | `client/**`, `shared/**`, `CONTRACTS.md` |
+| backend/INIT (scaffold only) | `backend/**`, `shared/wiring.config.json`, `CONTRACTS.md` | `client/**` |
+| shared/CLOUD | deployment files only | `client/**`, `backend/**`, `CONTRACTS.md` |
+
+Scaffold-only overrides expire automatically after the first successful merge for that scope.
+
+---
+
+## Wiring Config
+
+`shared/wiring.config.json` is the client-backend interface contract for environment variables. It contains conventional variable names only - no values, no ports.
+
+```json
+{
+  "client": {
+    "apiBaseUrlVar": "API_BASE_URL",
+    "environments": {
+      "development": {},
+      "staging": {},
+      "production": {}
+    }
+  },
+  "backend": {
+    "portVar": "PORT",
+    "corsOriginVar": "CORS_ORIGIN",
+    "environments": {
+      "development": {},
+      "staging": {},
+      "production": {}
+    }
+  }
+}
 ```
 
-For deployment set the root directory to `client/` - not the repo root.
+The `UI` agent populates the client section on first scaffold. The `INIT` agent populates the backend section. The `CLOUD` agent reads both sections to wire per-environment values correctly.
 
 ---
 
@@ -155,8 +200,6 @@ For deployment set the root directory to `client/` - not the repo root.
 3. Auto-clears old sessions or surfaces a decision when unfinished work is detected
 4. If no remote - opens your browser to `github.com/new` with the repo name pre-filled
 
-No manual `git remote add` needed.
-
 ---
 
 ## Key Files
@@ -166,32 +209,15 @@ No manual `git remote add` needed.
 | `CLAUDE.md` | Global coordination rules - every agent reads this first |
 | `BUILD_STATE.md` | Living project state - what is built, what is next |
 | `CONTRACTS.md` | Shared types and interfaces - single source of truth |
+| `TASKS_HISTORY.md` | Full audit trail of all agent sessions |
+| `CLOUD_STATE.md` | Cloud deployment state and prereq checklist |
+| `shared/wiring.config.json` | Client-backend env var name conventions |
 | `TASK.md` | Per-task instructions - lives in the agent worktree |
 | `.scaffold/.config.json` | Project config written at init time |
 | `.scaffold/.tracking.json` | Active agent state - managed by workflow scripts |
-| `.scaffold/.paths.json` | Expected and actual framework paths - updated by agents after scaffolding |
+| `.scaffold/scope-policy.json` | Allowed/blocked path rules per scope and agent |
 
-Never edit `BUILD_STATE.md` directly. `npm run complete` owns all updates to it. Editing it in a worktree causes merge conflicts.
-
----
-
-## CLAUDE.md Waterfall
-
-Context loads in this order for every agent:
-
-```
-Root CLAUDE.md                     <- global rules, protocols, tracking schema
-        |
-client/CLAUDE.md                   <- stack config, framework scaffold instructions
-        |
-.frameworks/client/{fw}.md         <- exact scaffold commands and path conventions
-        |
-.agents/client/UI.md               <- agent-specific behavior and constraints
-        |
-TASK.md                            <- the specific task to execute
-```
-
-Each layer narrows scope. Agents never need to be told what framework or language to use - it is resolved from config automatically.
+Never edit `BUILD_STATE.md` or `TASKS_HISTORY.md` directly. Workflow scripts own all updates.
 
 ---
 
@@ -199,11 +225,41 @@ Each layer narrows scope. Agents never need to be told what framework or languag
 
 The launcher enforces structural rules before any worktree is created:
 
-- **Skeleton guard** - LOGIC/FORMS/ROUTING/TESTING require UI completed first
+- **Skeleton guard** - LOGIC/FORMS/ROUTING/TESTING require UI completed first (client), API requires INIT completed first (backend)
 - **Prerequisite check** - surfaces unmet dependencies, lets you proceed or repick
-- **Active agent gate** - if the same agent is already running, offers Continue / Complete / Abandon / Pick again
+- **Active agent gate** - if the same agent is already running, offers Resume / Restart / Cancel with cascade warnings
 - **MISSING gate** - if a worktree was deleted without completing, mandatory Recover or Reset decision
-- **Coexistence check** - if recovering, surfaces file conflicts and divergence before restoring
+- **CLOUD gate** - CLOUD agent is only selectable when client and/or backend prerequisites are met, shows readiness table
+
+---
+
+## Architecture
+
+```
+my-project/
+├── .agents/                        <- agent instruction files (bundled in core/)
+│   ├── client/                     <- UI.md, LOGIC.md, FORMS.md, ROUTING.md, TESTING.md, ACCESSIBILITY.md
+│   ├── backend/                    <- INIT.md, API.md, DB.md, AUTH.md, LOGIC.md, EVENTS.md, JOBS.md, TESTING.md
+│   └── shared/                     <- CLOUD.md, SECURITY.md, CLOUD_TEARDOWN.md
+├── .frameworks/                    <- framework scaffold instructions (bundled in core/)
+│   ├── client/                     <- nextjs.md, angular.md, vite-react.md, nuxt.md, sveltekit.md, remix.md
+│   └── backend/                    <- express.md, nestjs.md, fastify.md, fastapi.md, django.md
+├── .workflow/                      <- workflow scripts (agent.js, complete.js, guards.js, reset.js, restart.js)
+├── .scaffold/                      <- runtime state (.config.json, .tracking.json, scope-policy.json, .initialized)
+├── client/                         <- built by client agents
+├── backend/                        <- built by backend agents (if separate)
+├── shared/
+│   └── wiring.config.json          <- client-backend env var conventions
+├── worktrees/                      <- local only, gitignored
+├── CLAUDE.md
+├── BUILD_STATE.md
+├── CONTRACTS.md
+├── TASKS_HISTORY.md
+└── CLOUD_STATE.md
+```
+
+Each agent works in its own `worktrees/` folder on a dedicated branch.
+On completion, scope is validated and work merges into `main`. The final `main` branch is a complete, runnable application.
 
 ---
 
@@ -228,52 +284,3 @@ The launcher enforces structural rules before any worktree is created:
 **Status values:** `null` (never launched) - `ACTIVE` (running) - `MISSING` (worktree deleted without completing)
 
 Managed entirely by `agent.js` and `complete.js`. Never edit manually.
-
----
-
-## Path Tracking
-
-`.scaffold/.paths.json` maps expected and actual framework paths:
-
-```json
-{
-  "client": {
-    "typesDir": {
-      "expected": "client/src/types",
-      "current": null,
-      "status": "pending"
-    }
-  }
-}
-```
-
-**Status values:** `pending` (not yet scaffolded) - `verified` (agent confirmed path) - `diverged` (actual path differs from expected)
-
-Written at init time. Updated by agents after scaffolding their framework.
-
----
-
-## Architecture
-
-```
-my-project/
-├── .agents/                        <- agent instruction files
-│   ├── client/                     <- UI.md, LOGIC.md, FORMS.md ...
-│   ├── backend/                    <- API.md, DB.md, AUTH.md ...
-│   └── shared/                     <- SECURITY.md
-├── .frameworks/                    <- framework scaffold instructions
-│   ├── client/                     <- nextjs.md, angular.md ...
-│   └── backend/                    <- express.md, fastapi.md ...
-├── .workflow/                      <- workflow scripts (agent.js, complete.js, guards.js)
-├── .scaffold/                      <- runtime state (config, tracking, paths, lock)
-├── client/                         <- built by client agents
-├── backend/                        <- built by backend agents (if separate)
-├── shared/
-├── worktrees/                      <- local only, gitignored
-├── CLAUDE.md
-├── BUILD_STATE.md
-└── CONTRACTS.md
-```
-
-Each agent works in its own `worktrees/` folder on a dedicated branch.
-On completion, its work merges into `main`. The final `main` branch is a complete, runnable application.
