@@ -1403,7 +1403,8 @@ ${excludedUrls}
     else console.log(`  ${yellow('!')} Could not open terminal - run ${cyan('claude')} manually in: ${dim(worktreePath)}`);
     separator();
     console.log(`\n  ${dim('When the agent is done, run:')} ${cyan('npm run complete')}\n`);
-    break sessionLoop;
+    rl.close();
+    process.exit(0);
 
   } else if (sessionIdx === 1) {
     const openedIDE = openIDE(worktreePath);
@@ -1412,7 +1413,8 @@ ${excludedUrls}
     separator();
     console.log(`\n  ${dim('Open a NEW Claude Code session and type')} ${cyan('go')} ${dim('to start.')}\n`);
     console.log(`  ${dim('When done, run:')} ${cyan('npm run complete')}\n`);
-    break sessionLoop;
+    rl.close();
+    process.exit(0);
 
   } else if (sessionIdx === 2) {
     const termOpened = openTerminal(worktreePath);
@@ -1420,7 +1422,8 @@ ${excludedUrls}
     else console.log(`  ${yellow('!')} Could not open terminal - run ${cyan('claude')} manually in: ${dim(worktreePath)}`);
     separator();
     console.log(`\n  ${dim('When the agent is done, run:')} ${cyan('npm run complete')}\n`);
-    break sessionLoop;
+    rl.close();
+    process.exit(0);
 
   } else {
     separator();
