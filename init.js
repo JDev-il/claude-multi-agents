@@ -1584,6 +1584,7 @@ fi
     console.log(`  ${dim('shared')}  : CLOUD, SECURITY\n`);
 
     console.log(`  ${dim('Next step:')}`);
+    console.log(`  ${cyan(`cd ${projectName}`)} ${dim('- enter your project')}`);
     console.log(`  ${cyan('npm run agent')} ${dim('- start your first task')}\n`);
     separator();
     console.log('');
