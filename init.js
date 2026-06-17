@@ -1201,6 +1201,35 @@ const main = async () => {
   );
   console.log(`  ${green('✓')} .scaffold/.config.json written`);
 
+  // ── Write scope-policy.json ──────────────────────────────────────────────────
+
+  const scopePolicy = {
+    client: {
+      allowed: ['client/**'],
+      blocked: ['backend/**', 'shared/**', 'CONTRACTS.md', 'BUILD_STATE.md', 'TASKS_HISTORY.md'],
+    },
+    backend: {
+      allowed: ['backend/**'],
+      blocked: ['client/**', 'shared/**', 'CONTRACTS.md', 'BUILD_STATE.md', 'TASKS_HISTORY.md'],
+      agentOverrides: {
+        INIT: {
+          allowed: ['backend/**', 'shared/wiring.config.json', 'CONTRACTS.md'],
+        },
+      },
+    },
+    shared: {
+      allowed: ['CLOUD_STATE.md', 'CLOUD.md', 'CLOUD_TEARDOWN.md', '.github/**', 'docker-compose*.yml', 'Dockerfile', '**/.env.example'],
+      blocked: ['client/**', 'backend/**', 'CONTRACTS.md', 'BUILD_STATE.md', 'TASKS_HISTORY.md'],
+    },
+  };
+
+  fs.writeFileSync(
+    path.join(RUNTIME_DIR, 'scope-policy.json'),
+    JSON.stringify(scopePolicy, null, 2),
+    'utf8'
+  );
+  console.log(`  ${green('✓')} .scaffold/scope-policy.json written`);
+
   // ── Generate BUILD_STATE.md ──────────────────────────────────────────────────
 
   const backendDisplay = backendType === 'integrated'

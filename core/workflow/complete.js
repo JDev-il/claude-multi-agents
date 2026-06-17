@@ -176,6 +176,55 @@ const main = async () => {
 
   const { path: worktreePath, branch: branchName } = selectedWorktree;
 
+  // ── Scope validation (Trust + Verify) ────────────────────────────────────────
+
+  const scopeJsonPath   = path.join(worktreePath, 'scope.json');
+  const scopePolicyPath = path.join(ROOT, '.scaffold', 'scope-policy.json');
+
+  if (fs.existsSync(scopeJsonPath) && fs.existsSync(scopePolicyPath)) {
+    const scopeMeta   = JSON.parse(fs.readFileSync(scopeJsonPath, 'utf8'));
+    const scopePolicy = JSON.parse(fs.readFileSync(scopePolicyPath, 'utf8'));
+
+    const policyScope = scopePolicy[scopeMeta.policy];
+    const agentKey    = scopeMeta.agent && scopeMeta.agent.toUpperCase();
+    const allowed     = (policyScope && policyScope.agentOverrides && policyScope.agentOverrides[agentKey] && policyScope.agentOverrides[agentKey].allowed) || (policyScope && policyScope.allowed) || [];
+    const blocked     = (policyScope && policyScope.blocked) || [];
+
+    const changedFiles = execSync('git diff --name-only main...HEAD', { cwd: worktreePath, stdio: 'pipe' })
+      .toString().trim().split('\n').filter(Boolean);
+
+    const matchesGlob = (file, pat) => {
+      if (pat.endsWith('/**')) return file.startsWith(pat.slice(0, -3));
+      if (pat.includes('*')) {
+        const re = pat.replace(/[.+^${}()|[\]\\]/g, '\\$&')
+                      .replace(/\*\*/g, 'DOUBLESTAR')
+                      .replace(/\*/g, '[^/]*')
+                      .replace(/DOUBLESTAR/g, '.*');
+        return new RegExp('^' + re + '$').test(file);
+      }
+      return file === pat;
+    };
+
+    const violations = changedFiles.filter(file => {
+      const isAllowed = allowed.some(pat => matchesGlob(file, pat));
+      const isBlocked = blocked.some(pat => matchesGlob(file, pat));
+      return !isAllowed || isBlocked;
+    });
+
+    if (violations.length > 0) {
+      console.log('\n' + red('  ✗ Scope violation - merge blocked.'));
+      console.log(dim('  The following files are outside the allowed scope for ' + scopeMeta.agent + ' (' + scopeMeta.scope + '):\n'));
+      violations.forEach(f => console.log('    ' + red('✗') + ' ' + f));
+      console.log('\n' + dim('  Fix the violations, then re-run npm run complete.\n'));
+      rl.close();
+      return;
+    }
+
+    console.log('  ' + green('✓') + ' Scope validation passed (' + changedFiles.length + ' files checked)');
+  } else {
+    console.log('  ' + dim('ℹ scope.json or scope-policy.json not found - skipping validation'));
+  }
+
   // ── Check TASK.md status ──────────────────────────────────────────────────────
 
   const taskMdPath = path.join(worktreePath, 'TASK.md');
