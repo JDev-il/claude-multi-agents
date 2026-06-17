@@ -1013,6 +1013,32 @@ const main = async () => {
     console.log(dim('  Re-selecting...\n'));
   }
 
+
+  // ── Terminal selection ────────────────────────────────────────────────────────
+
+  const TERMINAL_OPTIONS = process.platform === 'darwin'
+    ? [
+        { name: 'Terminal.app',  cmd: 'Terminal' },
+        { name: 'iTerm2',        cmd: 'iTerm2' },
+        { name: 'Warp',          cmd: 'Warp' },
+        { name: 'Other / skip',  cmd: null },
+      ]
+    : process.platform === 'win32'
+    ? [
+        { name: 'Command Prompt', cmd: 'cmd' },
+        { name: 'PowerShell',     cmd: 'powershell' },
+        { name: 'Other / skip',   cmd: null },
+      ]
+    : [
+        { name: 'gnome-terminal', cmd: 'gnome-terminal' },
+        { name: 'xterm',          cmd: 'xterm' },
+        { name: 'Other / skip',   cmd: null },
+      ];
+
+  const termIdx = await arrowSelect('* Preferred terminal (for Claude Code CLI):', TERMINAL_OPTIONS.map(t => ({ label: t.name })), rl);
+  const termChoice = TERMINAL_OPTIONS[termIdx];
+  console.log(`  ${green('✓')} ${termChoice.name}`);
+
   separator();
 
   // ── Summary ─────────────────────────────────────────────────────────────────
@@ -1191,6 +1217,10 @@ const main = async () => {
       language:  backendLang,
       orm:       backendOrm,
       auth:      backendAuth,
+    },
+    terminal: {
+      name: termChoice.name,
+      cmd:  termChoice.cmd,
     },
     scaffolded: {
       client:  false,

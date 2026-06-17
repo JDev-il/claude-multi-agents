@@ -172,15 +172,16 @@ const openIDE = (worktreePath) => {
 
 
 // ── Open new OS terminal with Claude Code CLI ───────────────────────────────
-
 const openTerminal = (worktreePath) => {
+  const termCmd = config.terminal && config.terminal.cmd;
+  if (!termCmd) return false;
   try {
     if (process.platform === 'darwin') {
-      execSync(`osascript -e 'tell app "Terminal" to do script "cd \"${worktreePath}\" && claude"'`, { stdio: 'pipe' });
+      execSync('osascript -e \'tell app "' + termCmd + '" to do script "cd \\"' + worktreePath + '\\" && claude"\'', { stdio: 'pipe' });
     } else if (process.platform === 'win32') {
-      execSync(`start cmd /k "cd /d "${worktreePath}" && claude"`, { stdio: 'pipe' });
+      execSync('start ' + termCmd + ' /k "cd /d ' + worktreePath + ' && claude"', { stdio: 'pipe' });
     } else {
-      execSync(`gnome-terminal -- bash -c "cd '${worktreePath}' && claude; exec bash" &`, { stdio: 'pipe' });
+      execSync(termCmd + ' -- bash -c "cd \'' + worktreePath + '\' && claude; exec bash" &', { stdio: 'pipe' });
     }
     return true;
   } catch { return false; }
