@@ -1401,6 +1401,7 @@ ${excludedUrls}
     const termOpened = openTerminal(worktreePath);
     if (termOpened) console.log(`  ${green('✓')} New terminal opened with Claude Code CLI`);
     else console.log(`  ${yellow('!')} Could not open terminal - run ${cyan('claude')} manually in: ${dim(worktreePath)}`);
+    console.log(`\n  ${dim("This window can be closed.")}`);
     rl.close();
     process.exit(0);
 
@@ -1416,6 +1417,7 @@ ${excludedUrls}
   } else if (sessionIdx === 2) {
     const termOpened = openTerminal(worktreePath);
     if (termOpened) console.log(`  ${green('✓')} New terminal opened with Claude Code CLI`);
+    console.log(`\n  ${dim("This window can be closed.")}`);
     rl.close();
     process.exit(0);
 
