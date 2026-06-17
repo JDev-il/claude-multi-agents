@@ -1385,6 +1385,100 @@ ${excludedUrls}
   separator();
   console.log(`\n${bold('  Workspace is set up and ready.')}\n`);
 
+  sessionLoop: while (true) {
+  const sessionIdx = await arrowSelect('How would you like to start the session?', [
+    { label: `${green('→')} IDE + new terminal ${dim('(Claude Code CLI)')}  ${dim('← recommended')}` },
+    { label: `${green('→')} IDE only` },
+    { label: `${green('→')} Claude Code CLI only ${dim('(new terminal)')}` },
+    { label: `${dim('?')} I'll continue from here, where do I start?` },
+  ], rl);
+
+  if (sessionIdx === 0) {
+    const openedIDE = openIDE(worktreePath);
+    if (openedIDE) console.log(`  ${green('✓')} ${openedIDE} opened`);
+    else console.log(`  ${yellow('!')} Could not open IDE - open manually at: ${dim(worktreePath)}`);
+    const termOpened = openTerminal(worktreePath);
+    if (termOpened) console.log(`  ${green('✓')} New terminal opened with Claude Code CLI`);
+    else console.log(`  ${yellow('!')} Could not open terminal - run ${cyan('claude')} manually in: ${dim(worktreePath)}`);
+    separator();
+    console.log(`\n  ${dim('When the agent is done, run:')} ${cyan('npm run complete')}\n`);
+    break sessionLoop;
+
+  } else if (sessionIdx === 1) {
+    const openedIDE = openIDE(worktreePath);
+    if (openedIDE) console.log(`  ${green('✓')} ${openedIDE} opened`);
+    else console.log(`  ${yellow('!')} Could not open IDE - open manually at: ${dim(worktreePath)}`);
+    separator();
+    console.log(`\n  ${dim('Open a NEW Claude Code session and type')} ${cyan('go')} ${dim('to start.')}\n`);
+    console.log(`  ${dim('When done, run:')} ${cyan('npm run complete')}\n`);
+    break sessionLoop;
+
+  } else if (sessionIdx === 2) {
+    const termOpened = openTerminal(worktreePath);
+    if (termOpened) console.log(`  ${green('✓')} New terminal opened with Claude Code CLI`);
+    else console.log(`  ${yellow('!')} Could not open terminal - run ${cyan('claude')} manually in: ${dim(worktreePath)}`);
+    separator();
+    console.log(`\n  ${dim('When the agent is done, run:')} ${cyan('npm run complete')}\n`);
+    break sessionLoop;
+
+  } else {
+    separator();
+    const subIdx = await arrowSelect('What would you like to view?', [
+      { label: 'View instructions' },
+      { label: 'View folder structure' },
+      { label: 'View available agents' },
+      { label: `${dim('←')} Back to session options` },
+    ], rl);
+
+    if (subIdx === 3) { continue sessionLoop; }
+
+    if (subIdx === 0) {
+      separator();
+      console.log(`\n  ${bold('How to start your agent session:')}\n`);
+      console.log(`  ${bold('1.')} Open your IDE at:`);
+      console.log(`     ${cyan(worktreePath)}\n`);
+      console.log(`  ${bold('2.')} Open a NEW Claude Code session and type ${cyan('go')} to start`);
+      console.log(dim('     Do NOT reuse a previous session.\n'));
+      console.log(`  ${bold('3.')} Let the agent run autonomously\n`);
+      console.log(`  ${bold('4.')} When done, run: ${cyan('npm run complete')} to merge into main\n`);
+      separator();
+      console.log('');
+      await arrowSelect('Press enter to continue', [{ label: 'OK, got it' }], rl);
+      continue sessionLoop;
+
+    } else if (subIdx === 1) {
+      const framework = config.client?.framework || config.backend?.framework || '';
+      displayWorkspaceTree(worktreeName, worktreePath, project, agent, framework);
+      separator();
+      console.log('');
+      await arrowSelect('Press enter to continue', [{ label: 'OK, got it' }], rl);
+      continue sessionLoop;
+
+    } else if (subIdx === 2) {
+      const allAgents = AGENTS[project] || [];
+      const completed = buildEntries.filter(e => e.scope === project && e.status === 'COMPLETED').map(e => e.agent);
+      separator();
+      console.log(`\n  ${bold('Available agents for ' + project + ':')}\n`);
+      allAgents.forEach(a => {
+        const done    = completed.includes(a);
+        const current = a === agent;
+        const icon    = current ? cyan('→') : done ? green('✓') : dim('·');
+        const label   = current ? bold(cyan(a)) : done ? dim(a + ' (completed)') : a;
+        console.log(`  ${icon}  ${label}`);
+      });
+      console.log('');
+      separator();
+      console.log('');
+      await arrowSelect('Press enter to continue', [{ label: 'OK, got it' }], rl);
+      continue sessionLoop;
+    }
+  }
+  } // end sessionLoop
+  // ── Session start selection ─────────────────────────────────────────────────
+
+  separator();
+  console.log(`\n${bold('  Workspace is set up and ready.')}\n`);
+
   const sessionIdx = await arrowSelect('How would you like to start the session?', [
     { label: `${green('→')} IDE + new terminal ${dim('(Claude Code CLI)')}  ${dim('← recommended')}` },
     { label: `${green('→')} IDE only` },
