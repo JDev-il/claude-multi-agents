@@ -12,3 +12,5 @@ worktrees/
 .vscode/
 node_modules/
 *.DS_Store
+!core/templates/shared/
+!core/templates/shared/**

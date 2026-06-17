@@ -1,0 +1,14 @@
+{
+  "client": {
+    "apiBaseUrlVar": "API_BASE_URL"
+  },
+  "backend": {
+    "portVar": "PORT",
+    "corsOriginVar": "CORS_ORIGIN"
+  },
+  "environments": {
+    "development": {},
+    "staging": {},
+    "production": {}
+  }
+}
