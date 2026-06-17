@@ -187,7 +187,10 @@ const main = async () => {
 
     const policyScope = scopePolicy[scopeMeta.policy];
     const agentKey    = scopeMeta.agent && scopeMeta.agent.toUpperCase();
-    const allowed     = (policyScope && policyScope.agentOverrides && policyScope.agentOverrides[agentKey] && policyScope.agentOverrides[agentKey].allowed) || (policyScope && policyScope.allowed) || [];
+    const override        = policyScope && policyScope.agentOverrides && policyScope.agentOverrides[agentKey];
+    const scaffoldedFlag  = (config.scaffolded || {})[scopeMeta.scope];
+    const overrideActive  = override && (!override.onlyBeforeScaffolded || !scaffoldedFlag);
+    const allowed         = (overrideActive && override.allowed) || (policyScope && policyScope.allowed) || [];
     const blocked     = (policyScope && policyScope.blocked) || [];
 
     const changedFiles = execSync('git diff --name-only main...HEAD', { cwd: worktreePath, stdio: 'pipe' })
@@ -350,6 +353,22 @@ const main = async () => {
       const agent = parts[2].toUpperCase();
       guards.clearTrackingSlot(tracking, scope, agent, ROOT);
       console.log(`  ${green('✓')} Tracking slot cleared`);
+    }
+  } catch { /* best-effort */ }
+
+  // ── Update scaffold flags ──────────────────────────────────────────────────
+
+  try {
+    const parts = branchName.split('/');
+    if (parts.length >= 4) {
+      const scope = parts[1];
+      const agent = parts[2].toUpperCase();
+      const cfgPath = path.join(ROOT, '.scaffold', '.config.json');
+      const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+      if (!cfg.scaffolded) cfg.scaffolded = { client: false, backend: false };
+      if (scope === 'client' && agent === 'UI')   cfg.scaffolded.client  = true;
+      if (scope === 'backend' && agent === 'INIT') cfg.scaffolded.backend = true;
+      fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2), 'utf8');
     }
   } catch { /* best-effort */ }
 

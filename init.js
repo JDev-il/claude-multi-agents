@@ -1192,6 +1192,10 @@ const main = async () => {
       orm:       backendOrm,
       auth:      backendAuth,
     },
+    scaffolded: {
+      client:  false,
+      backend: false,
+    },
   };
 
   fs.writeFileSync(
@@ -1207,6 +1211,12 @@ const main = async () => {
     client: {
       allowed: ['client/**'],
       blocked: ['backend/**', 'shared/**', 'CONTRACTS.md', 'BUILD_STATE.md', 'TASKS_HISTORY.md'],
+      agentOverrides: {
+        UI: {
+          allowed: ['client/**', 'shared/wiring.config.json'],
+          onlyBeforeScaffolded: true,
+        },
+      },
     },
     backend: {
       allowed: ['backend/**'],
@@ -1214,6 +1224,7 @@ const main = async () => {
       agentOverrides: {
         INIT: {
           allowed: ['backend/**', 'shared/wiring.config.json', 'CONTRACTS.md'],
+          onlyBeforeScaffolded: true,
         },
       },
     },

@@ -1400,7 +1400,7 @@ ${excludedUrls}
   console.log(`  ${bold('2.')} ${bold(yellow('Open a NEW session in Claude Code CLI or Claude Code Extension - and type go or start to initiate'))}`);
   console.log(dim('     Do NOT reuse a previous session.\n'));
   console.log(`  ${bold('3.')} Start the session and let the agent run.\n`);
-  console.log(dim('     The agent will run `') + cyan('npm run complete') + dim('` autonomously when the task is done.\n'));
+  console.log(`  ${bold('4.')} When the agent is done, run: ${cyan('npm run complete')} to merge the task into main.\n`);
   separator();
   console.log('');
 
