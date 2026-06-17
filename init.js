@@ -1583,12 +1583,15 @@ fi
     }
     console.log(`  ${dim('shared')}  : CLOUD, SECURITY\n`);
 
-    console.log(`  ${dim('Next step:')}`);
-    console.log(`  ${cyan(`cd ${projectName}`)} ${dim('- enter your project')}`);
-    console.log(`  ${cyan('npm run agent')} ${dim('- start your first task')}\n`);
+    console.log(`  ${dim('Starting your first agent session...\n')}`);
     separator();
     console.log('');
     rl.close();
+    const { spawn: sp } = require('child_process');
+    const agentProc = sp('npm', ['run', 'agent'], { cwd: ROOT, stdio: 'inherit' });
+    agentProc.on('error', (err) => {
+      console.error('  Could not start agent:', err.message);
+    });
     return;
   }
 
