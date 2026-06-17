@@ -1060,20 +1060,11 @@ const main = async () => {
   separator();
   console.log(`\n${bold('Setting up your project...')}\n`);
 
-  // ── Clone multi-agents-core ──────────────────────────────────────────────────
+  // ── Load bundled core ───────────────────────────────────────────────────────
 
-  const CORE_REPO = 'https://github.com/JDev-il/multi-agents-core.git';
-  const CORE_DIR  = path.join(ROOT, '.agents-core');
+  const CORE_DIR = path.join(__dirname, 'core');
 
-  console.log(`  Fetching templates...`);
-  try {
-    execSync(`git clone "${CORE_REPO}" "${CORE_DIR}"`, { stdio: 'pipe' });
-    console.log(`  ${green('✓')} Templates fetched`);
-  } catch (err) {
-    console.log(`  ${red('✗')} Failed to fetch templates. Check your internet connection.`);
-    rl.close();
-    process.exit(1);
-  }
+  console.log(`  ${green('✓')} Templates ready`);
 
   const TEMPLATES = path.join(CORE_DIR, 'templates');
 
@@ -1123,8 +1114,6 @@ const main = async () => {
   fs.mkdirSync(WORKFLOW_DEST, { recursive: true });
   copyDir(WORKFLOW_SRC, WORKFLOW_DEST);
   console.log(`  ${green('✓')} Workflow scripts copied (.workflow/)`);
-
-  execSync(`rm -rf "${CORE_DIR}"`);
   console.log(`  ${green('✓')} Temporary files cleaned up`);
 
   // ── Write @config values ─────────────────────────────────────────────────────
@@ -1159,7 +1148,6 @@ const main = async () => {
   }
 
   ensureGitignore('worktrees/');
-  ensureGitignore('.agents-core/');
   ensureGitignore('.scaffold/');
   ensureGitignore('.workflow/');
   ensureGitignore('node_modules/');

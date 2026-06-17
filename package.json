@@ -21,6 +21,7 @@
   },
   "files": [
     "init.js",
+    "core/",
     "README.md",
     "LICENSE"
   ],
