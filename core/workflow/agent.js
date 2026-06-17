@@ -170,12 +170,13 @@ const openIDE = (worktreePath) => {
 };
 
 
-// ── Open new OS terminal with Claude Code CLI ─────────────────────────────────
+
+// ── Open new OS terminal with Claude Code CLI ───────────────────────────────
 
 const openTerminal = (worktreePath) => {
   try {
     if (process.platform === 'darwin') {
-      execSync(`osascript -e 'tell app "Terminal" to do script "cd \\"${worktreePath}\\" && claude"'`, { stdio: 'pipe' });
+      execSync(`osascript -e 'tell app "Terminal" to do script "cd \"${worktreePath}\" && claude"'`, { stdio: 'pipe' });
     } else if (process.platform === 'win32') {
       execSync(`start cmd /k "cd /d "${worktreePath}" && claude"`, { stdio: 'pipe' });
     } else {
@@ -185,8 +186,7 @@ const openTerminal = (worktreePath) => {
   } catch { return false; }
 };
 
-
-// ── Workspace tree display ────────────────────────────────────────────────────
+// ── Workspace tree display ──────────────────────────────────────────────────
 
 const displayWorkspaceTree = (worktreeName, worktreePath, project, agent, framework) => {
   const fwFile = framework ? framework.toLowerCase().replace(/[^a-z0-9]/g, '-') + '.md' : null;
@@ -1228,15 +1228,6 @@ Mark each step complete. Only proceed to the task below when all are checked.
   );
   console.log(`  ${green('✓')} .claude-scope written`);
 
-  // ── Write scope.json ─────────────────────────────────────────────────────────
-
-  fs.writeFileSync(
-    path.join(worktreePath, 'scope.json'),
-    JSON.stringify({ agent, scope: project, branch: branchName, policy: project }, null, 2),
-    'utf8'
-  );
-  console.log(`  ${green('✓')} scope.json written`);
-
   // ── Generate IDE settings ─────────────────────────────────────────────────────
 
   const excludedFolders = {
@@ -1389,7 +1380,7 @@ ${excludedUrls}
     }
   }
 
-  // ── Session start selection ──────────────────────────────────────────────────
+  // ── Session start selection ─────────────────────────────────────────────────
 
   separator();
   console.log(`\n${bold('  Workspace is set up and ready.')}\n`);
@@ -1398,7 +1389,7 @@ ${excludedUrls}
     { label: `${green('→')} IDE + new terminal ${dim('(Claude Code CLI)')}  ${dim('← recommended')}` },
     { label: `${green('→')} IDE only` },
     { label: `${green('→')} Claude Code CLI only ${dim('(new terminal)')}` },
-    { label: `${dim('?')} I\'ll continue from here, where do I start?` },
+    { label: `${dim('?')} I'll continue from here, where do I start?` },
   ], rl);
 
   if (sessionIdx === 0) {
@@ -1443,10 +1434,16 @@ ${excludedUrls}
       console.log(dim('     Do NOT reuse a previous session.\n'));
       console.log(`  ${bold('3.')} Let the agent run autonomously\n`);
       console.log(`  ${bold('4.')} When done, run: ${cyan('npm run complete')} to merge into main\n`);
+      separator();
+      console.log('');
+      await arrowSelect('Press enter to continue', [{ label: 'OK, got it' }], rl);
 
     } else if (subIdx === 1) {
       const framework = config.client?.framework || config.backend?.framework || '';
       displayWorkspaceTree(worktreeName, worktreePath, project, agent, framework);
+      separator();
+      console.log('');
+      await arrowSelect('Press enter to continue', [{ label: 'OK, got it' }], rl);
 
     } else {
       const allAgents = AGENTS[project] || [];
@@ -1461,72 +1458,14 @@ ${excludedUrls}
         console.log(`  ${icon}  ${label}`);
       });
       console.log('');
+      separator();
+      console.log('');
+      await arrowSelect('Press enter to continue', [{ label: 'OK, got it' }], rl);
     }
   }
 
   separator();
   console.log('');
-  rl.close();
-  // ── Ready to open workspace? ──────────────────────────────────────────────────
-
-  separator();
-  console.log(`\n${bold('  Workspace is set up and ready.')}`);
-  console.log(dim(`  Worktree: worktrees/${worktreeName}\n`));
-  console.log(`  ${yellow('⚠')}  ${bold('Once your IDE opens and is ready, open a NEW session in Claude Code CLI or Claude Code Extension - and type go or start to initiate')}`);
-  console.log(dim('     Do NOT reuse a previous session - the agent needs a clean context.'));
-
-  const openNow = await arrowConfirm('Open workspace now?', rl);
-
-  if (!openNow) {
-    console.clear();
-    separator();
-    console.log(`\n${bold(yellow('  Workspace saved - resume when ready:'))}\n`);
-    console.log(`  ${bold('1.')} Open your IDE at:`);
-    console.log(`     ${cyan(worktreePath)}\n`);
-    console.log(`  ${bold('2.')} Open a ${bold('NEW')} session in Claude Code CLI or Claude Code Extension - and type go or start to initiate`);
-    console.log(dim('     Do NOT reuse a previous session.\n'));
-    console.log(`  ${bold('3.')} Start the session and let the agent run.\n`);
-    separator();
-    console.log('');
-    rl.close();
-    return;
-  }
-
-  // ── Open IDE ──────────────────────────────────────────────────────────────────
-
-  const openedIDE = openIDE(worktreePath);
-  if (openedIDE) {
-    console.log(`  ${green('✓')} ${openedIDE} opened at worktrees/${worktreeName}`);
-  } else {
-    console.log(`  ${yellow('!')} Could not open IDE automatically.`);
-    console.log(dim(`     Open manually at: ${worktreePath}`));
-  }
-
-  // ── Launch Claude Code CLI ──────────────────────────────────────────────────
-
-  let claudeLaunched = false;
-  try {
-    const { spawn: sp } = require('child_process');
-    const claudeProc = sp('claude', [], { cwd: worktreePath, stdio: 'inherit', detached: false });
-    claudeProc.on('error', () => {});
-    claudeLaunched = true;
-  } catch {}
-
-  if (claudeLaunched) { rl.close(); return; }
-
-  // ── Next steps ────────────────────────────────────────────────────────────────
-
-  separator();
-  console.log(`\n${bold(green('  Workspace ready!'))}\n`);
-  console.log(`  ${bold('1.')} Your IDE should be open at: ${cyan(`worktrees/${worktreeName}`)}`);
-  console.log(dim('     If not, open it manually at the path above.\n'));
-  console.log(`  ${bold('2.')} ${bold(yellow('Open a NEW session in Claude Code CLI or Claude Code Extension - and type go or start to initiate'))}`);
-  console.log(dim('     Do NOT reuse a previous session.\n'));
-  console.log(`  ${bold('3.')} Start the session and let the agent run.\n`);
-  console.log(`  ${bold('4.')} When the agent is done, run: ${cyan('npm run complete')} to merge the task into main.\n`);
-  separator();
-  console.log('');
-
   rl.close();
 };
 
