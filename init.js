@@ -1550,8 +1550,43 @@ fi
 
   if (selected.next === 'launch') {
     separator();
-    console.log(`\n  ${bold(green('  Project ready!'))}\n`);
-    console.log(`  Run ${cyan('npm run agent')} to start your first task.\n`);
+    console.log(`\n${bold(green('  Project initialized successfully!'))}\n`);
+
+    // ── Summary block ─────────────────────────────────────────────────────────
+    const bt = config.backend?.type;
+
+    console.log(`  ${dim('Project')}   : ${bold(projectName)}`);
+    console.log(`  ${dim('Client')}    : ${config.client.framework} / ${config.client.language}${config.client.uiLibrary ? ' / ' + config.client.uiLibrary : ''}`);
+    if (bt === 'separate') {
+      console.log(`  ${dim('Backend')}   : ${config.backend.framework} / ${config.backend.language}${config.backend.orm ? ' / ' + config.backend.orm : ''}`);
+    } else {
+      console.log(`  ${dim('Backend')}   : integrated (API routes / SSR)`);
+    }
+    console.log(`  ${dim('Workflow')}  : ${selected.label}\n`);
+
+    console.log(`  ${dim('Files generated:')}`);
+    console.log(`  ${green('+')} CLAUDE.md, client/CLAUDE.md${bt === 'separate' ? ', backend/CLAUDE.md' : ''}`);
+    console.log(`  ${green('+')} BUILD_STATE.md, TASKS_HISTORY.md, CONTRACTS.md`);
+    console.log(`  ${green('+')} CLOUD_STATE.md, shared/wiring.config.json`);
+    console.log(`  ${green('+')} .scaffold/.config.json, .scaffold/scope-policy.json`);
+    console.log(`  ${green('+')} .agents/, .frameworks/, .workflow/\n`);
+
+    console.log(`  ${dim('Git:')}`);
+    console.log(`  ${green('+')} Repository initialized on main`);
+    console.log(`  ${green('+')} Pre-commit hook installed (direct main commits blocked)`);
+    console.log(`  ${green('+')} Initial commit created\n`);
+
+    console.log(`  ${dim('Agents available:')}`);
+    console.log(`  ${dim('client')}  : UI, LOGIC, FORMS, ROUTING, ACCESSIBILITY, TESTING`);
+    if (bt === 'separate') {
+      console.log(`  ${dim('backend')} : INIT, API, AUTH, DB, LOGIC, EVENTS, JOBS, TESTING`);
+    }
+    console.log(`  ${dim('shared')}  : CLOUD, SECURITY\n`);
+
+    console.log(`  ${dim('Next step:')}`);
+    console.log(`  ${cyan('npm run agent')} ${dim('- start your first task')}\n`);
+    separator();
+    console.log('');
     rl.close();
     return;
   }
