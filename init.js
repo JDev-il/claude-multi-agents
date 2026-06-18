@@ -20,6 +20,7 @@ const {
   c, bold, green, yellow, dim, cyan, blue, red,
   rl, ask,
   arrowSelect, arrowConfirm,
+  selectRequired, selectOptional,
   separator, showList, summaryLine, renderTrajectoryLines,
 } = require('./lib/ui');
 
@@ -120,40 +121,6 @@ const LOCK_FILE   = path.join(RUNTIME_DIR, '.initialized');
 fs.mkdirSync(RUNTIME_DIR, { recursive: true });
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-const selectRequired = async (prompt, items, stepMachine, stepIndex) => {
-  const isFirstStep = stepIndex <= 1;
-  const navOpts = stepMachine ? stepMachine.navOptions(stepIndex, isFirstStep) : [];
-  const allItems = [...items, ...navOpts];
-
-  const idx = await arrowSelect(prompt, allItems.map(i => ({ label: typeof i === 'string' ? i : i.label })));
-
-  if (idx >= items.length) {
-    const nav = navOpts[idx - items.length];
-    return nav ? nav.value : RESTART;
-  }
-  return items[idx];
-};
-
-const selectOptional = async (prompt, items, stepMachine, stepIndex) => {
-  if (!items || items.length === 0) return null;
-  const isFirstStep = stepIndex <= 1;
-  const navOpts = stepMachine ? stepMachine.navOptions(stepIndex, isFirstStep) : [];
-  const choices = [
-    ...items.map(i => ({ label: typeof i === 'string' ? i : i.label })),
-    { label: dim('Skip (agent will propose when needed)') },
-    ...navOpts.map(n => ({ label: n.label })),
-  ];
-
-  const idx = await arrowSelect(prompt, choices);
-
-  if (idx === items.length) return null; // skip
-  if (idx > items.length) {
-    const nav = navOpts[idx - items.length - 1];
-    return nav ? nav.value : RESTART;
-  }
-  return typeof items[idx] === 'string' ? items[idx] : items[idx].value;
-};
 
 const copyDirExcluding = (src, dest, exclude = []) => {
   fs.mkdirSync(dest, { recursive: true });
