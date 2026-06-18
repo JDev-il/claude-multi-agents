@@ -791,7 +791,9 @@ const main = async () => {
   let timestamp, sanitizedName, worktreeName, branchName, worktreePath;
   let contextSection = '';
 
+  let userSeedingContracts = false;
   flowLoop: while (true) {
+  userSeedingContracts = false; // reset each iteration
 
   // ── Select scope ─────────────────────────────────────────────────────────────
 
@@ -1024,8 +1026,6 @@ const main = async () => {
       if (repickIdx === 1) continue agentLoop;
     }
   }
-
-  let userSeedingContracts = false;
 
   // Contracts check — only for relevant agents, optional for senior devs
 
