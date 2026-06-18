@@ -1025,23 +1025,27 @@ const main = async () => {
     }
   }
 
-  // Contracts check
+  // Contracts check — only for relevant agents, optional for senior devs
 
-  if (CONTRACTS_REQUIRED.includes(agent) && !contracts.hasContent) {
-    console.log(`\n${yellow('  ℹ CONTRACTS.md is empty')} ${dim('- no shared types or DTOs defined yet.')}\n`);
-    const assist = await arrowConfirm('Would you like the agent to establish contracts for your app?', rl);
-    if (assist) {
-      contractsNote = 'Before implementing, identify and define the required shared contracts, types, and interfaces in CONTRACTS.md first.';
-      console.log(dim('\n  ✓ Agent will establish contracts as the first step.\n'));
-    } else {
-      console.log(dim('\n  You can define the structure here, or the agent will adapt.'));
-      const manual = await ask(`  ${bold('Provide contract structure')} ${dim('(or press Enter to skip)')}: \n  → `);
+  const CONTRACTS_SEED_AGENTS = ['LOGIC', 'INIT', 'API'];
+  if (CONTRACTS_SEED_AGENTS.includes(agent) && !contracts.hasContent) {
+    console.log(`\n${yellow('  ℹ CONTRACTS.md is empty')} ${dim('- agent will populate it as contracts are discovered.')}\n`);
+    const seedIdx = await arrowSelect(
+      'Seed contracts now, or let the agent discover them?',
+      [
+        { label: `${dim('→')} Let the agent handle it ${dim('(recommended)')}` },
+        { label: `${dim('→')} Seed contracts now ${dim('(for senior devs who know their interfaces)')}` },
+      ],
+      rl
+    );
+    if (seedIdx === 1) {
+      const manual = await ask(`\n  ${bold('Describe your known interfaces, types, or DTOs')} ${dim('(free text)')}: \n  → `);
       if (manual.trim()) {
-        contractsNote = `Contract structure provided:\n${manual.trim()}\nUse this as the basis for CONTRACTS.md.`;
-        console.log(dim('  ✓ Contract structure noted.\n'));
-      } else {
-        console.log(dim('  Agent will flag type assumptions as it builds.\n'));
+        contractsNote = `Contract structure provided by user before session start:\n${manual.trim()}\nBootstrap CONTRACTS.md from this before implementing anything.`;
+        console.log(dim('\n  ✓ Contract structure noted - agent will bootstrap CONTRACTS.md first.\n'));
       }
+    } else {
+      console.log(dim('  Agent will populate CONTRACTS.md as contracts are discovered.\n'));
     }
   }
 
