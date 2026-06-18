@@ -61,7 +61,8 @@ const {
   printInitSummary,
 } = require('./lib/summary');
 
-const { StepMachine, BACK, CONTINUE, RESTART } = require('./lib/steps');
+const { StepMachine, BACK, CONTINUE, RESTART, runQuestions } = require('./lib/steps');
+const { buildStepDefs } = require('./lib/questions-flow');
 
 // ── Prompts ───────────────────────────────────────────────────────────────────
 
@@ -285,191 +286,45 @@ const main = async () => {
   console.log(dim('  Use arrow keys to select. Optional fields can be skipped.\n'));
   console.log(dim('  Skipped fields will be resolved by the agent when first needed.\n'));
 
-  // ── Step machine ─────────────────────────────────────────────────────────────
+  // ── Step machine + question runner ──────────────────────────────────────────
 
-  const steps = new StepMachine();
+  const steps    = new StepMachine();
+  const stepDefs = buildStepDefs(IDE_CANDIDATES);
 
-  // ── Project name (step 1) ─────────────────────────────────────────────────────
-
+  // Project name (free-text, outside the runner)
   let projectName = '';
   while (!projectName) {
     projectName = await ask(`${bold('* Project name')}: `);
-    if (!projectName) console.log(yellow('  Project name is required. Please enter a name.'));
+    if (!projectName) console.log(yellow('  Project name is required.'));
   }
   steps.push(0, 'Project name', projectName);
-
   separator();
 
-  // ── Questions loop ────────────────────────────────────────────────────────────
-
-  let stepIdx = 1;
-
-  // Step 1: Client framework
-  console.log(`\n${bold(blue('Client configuration'))}`);
-  let clientFw = await selectRequired('* Client framework (required):', CLIENT_FRAMEWORKS, steps, stepIdx);
-  if (clientFw === RESTART) { rl.close(); spawn('node', [__filename], { stdio: 'inherit', cwd: ROOT }).on('exit', c => process.exit(c)); return; }
-  steps.push(stepIdx++, 'Client framework', clientFw);
-
-  // Step 2: Client framework version
-  let clientFwVersion = null;
-  const clientVersions = await fetchLatestVersions(clientFw.value) || FRAMEWORK_VERSION_FALLBACK[clientFw.value] || [];
-  if (clientVersions.length) {
-    console.log(dim('  Fetching latest versions...'));
-    const versionChoices = clientVersions.map((v, i) => ({
-      label: i === 0 ? `v${v}  ${dim('(latest)')}` : `v${v}`,
-      value: v,
-    }));
-    const versionLabel = clientFw.value === 'Vite+React' ? '* Vite version:' : `* ${clientFw.value} version:`;
-    const vIdx = await arrowSelect(versionLabel, [
-      ...versionChoices,
-      ...steps.navOptions(stepIdx, false).map(n => ({ label: n.label })),
-    ]);
-    if (vIdx < clientVersions.length) {
-      clientFwVersion = clientVersions[vIdx];
-      steps.push(stepIdx++, 'Client version', clientFwVersion);
-    } else {
-      rl.close(); spawn('node', [__filename], { stdio: 'inherit', cwd: ROOT }).on('exit', c => process.exit(c)); return;
-    }
+  // Run all question steps with back-nav support
+  const answers = await runQuestions(stepDefs, steps);
+  if (answers === RESTART) {
+    rl.close();
+    spawn('node', [__filename], { stdio: 'inherit', cwd: ROOT }).on('exit', c => process.exit(c));
+    return;
   }
 
-  const clientLang = clientFw.language;
+  // Destructure answers
+  const clientFw             = answers.clientFw;
+  const clientFwVersion      = answers.clientFwVersion || null;
+  const clientLang           = clientFw.language;
+  const clientState          = answers.clientState || null;
+  const clientUi             = answers.clientUi || null;
+  const clientStyle          = answers.clientStyle || null;
+  const useIntegratedBackend = answers.useIntegratedBackend || false;
+  const backendFwObj         = answers.backendFwObj || null;
+  const backendFw            = backendFwObj ? backendFwObj.value    : null;
+  const backendLang          = backendFwObj ? backendFwObj.language : null;
+  const backendOrm           = answers.backendOrm || null;
+  const backendAuth          = answers.backendAuth || null;
+  const backendType          = useIntegratedBackend ? 'integrated' : backendFw ? 'separate' : null;
+  const ideChoice            = answers.ideChoice;
 
-  // Step 3: State management
-  let clientState = await selectOptional('State management:', STATE_OPTIONS[clientFw.value] || [], steps, stepIdx);
-  if (clientState === RESTART) { rl.close(); spawn('node', [__filename], { stdio: 'inherit', cwd: ROOT }).on('exit', c => process.exit(c)); return; }
-  steps.push(stepIdx++, 'State management', clientState);
 
-  // Step 4: UI library
-  let clientUi = await selectOptional('UI library:', UI_OPTIONS[clientFw.value] || [], steps, stepIdx);
-  if (clientUi === RESTART) { rl.close(); spawn('node', [__filename], { stdio: 'inherit', cwd: ROOT }).on('exit', c => process.exit(c)); return; }
-  steps.push(stepIdx++, 'UI library', clientUi);
-
-  // Step 5: Styling
-  let clientStyle = await selectOptional('Styling:', STYLING_OPTIONS, steps, stepIdx);
-  if (clientStyle === RESTART) { rl.close(); spawn('node', [__filename], { stdio: 'inherit', cwd: ROOT }).on('exit', c => process.exit(c)); return; }
-  steps.push(stepIdx++, 'Styling', clientStyle);
-
-  separator();
-
-  // ── Backend ──────────────────────────────────────────────────────────────────
-
-  console.log(`\n${bold(blue('Backend configuration'))}`);
-
-  let useIntegratedBackend = false;
-  let backendFw    = null;
-  let backendLang  = null;
-  let backendOrm   = null;
-  let backendAuth  = null;
-  let backendType  = null;
-  let backendFwObj = null;
-
-  if (clientFw.integratedBackend) {
-    console.log(dim(`  ${clientFw.value} supports server-side rendering and API routes.\n`));
-    useIntegratedBackend = await arrowConfirm(`Use integrated backend (${clientFw.value} API routes/SSR) instead of a separate backend?`);
-
-    if (useIntegratedBackend) {
-      backendType = 'integrated';
-      console.log(dim(`\n  Using ${clientFw.value} integrated backend. No separate backend needed.\n`));
-    }
-  }
-
-  if (!useIntegratedBackend) {
-    console.log(dim('  You can skip the backend framework and decide later.\n'));
-
-    const backendChoices = [
-      ...BACKEND_FRAMEWORKS.map(f => ({ label: f.label || f.value })),
-      { label: dim('Skip (decide later)') },
-    ];
-    const backendIdx = await arrowSelect('Backend framework:', backendChoices);
-    backendFwObj = backendIdx === BACKEND_FRAMEWORKS.length ? null : BACKEND_FRAMEWORKS[backendIdx];
-    backendFw    = backendFwObj ? backendFwObj.value    : null;
-    backendLang  = backendFwObj ? backendFwObj.language : null;
-    steps.push(stepIdx++, 'Backend framework', backendFw);
-
-    if (backendFw) {
-      const backendVersions = await fetchLatestVersions(backendFw) || FRAMEWORK_VERSION_FALLBACK[backendFw] || [];
-      if (backendVersions.length) {
-        const vChoices = backendVersions.map((v, i) => ({
-          label: i === 0 ? `v${v}  ${dim('(latest)')}` : `v${v}`,
-          value: v,
-        }));
-        const vIdx = await arrowSelect(`* ${backendFw} version:`, [
-          ...vChoices,
-          ...steps.navOptions(stepIdx, false).map(n => ({ label: n.label })),
-        ]);
-        if (vIdx < backendVersions.length) {
-          backendFwObj = { ...backendFwObj, version: backendVersions[vIdx] };
-          steps.push(stepIdx++, 'Backend version', backendVersions[vIdx]);
-        }
-      }
-    }
-
-    let backendDb = null;
-    if (backendFw) {
-      backendDb = await selectOptional('Database type:', DB_OPTIONS, steps, stepIdx);
-      if (backendDb === RESTART) { rl.close(); spawn('node', [__filename], { stdio: 'inherit', cwd: ROOT }).on('exit', c => process.exit(c)); return; }
-      steps.push(stepIdx++, 'Database', backendDb);
-    }
-
-    if (backendFw && backendDb && backendDb !== 'Skip (agent will propose when needed)') {
-      const ormChoices = ORM_OPTIONS_BY_DB[backendDb] || ORM_OPTIONS[backendFw] || [];
-      backendOrm = await selectOptional('ORM / query layer:', ormChoices, steps, stepIdx);
-      if (backendOrm === RESTART) { rl.close(); spawn('node', [__filename], { stdio: 'inherit', cwd: ROOT }).on('exit', c => process.exit(c)); return; }
-      steps.push(stepIdx++, 'ORM', backendOrm);
-    }
-
-    backendAuth = backendFw ? await selectOptional('Auth strategy:', AUTH_OPTIONS[backendFw] || [], steps, stepIdx) : null;
-    if (backendAuth === RESTART) { rl.close(); spawn('node', [__filename], { stdio: 'inherit', cwd: ROOT }).on('exit', c => process.exit(c)); return; }
-    steps.push(stepIdx++, 'Auth', backendAuth);
-    backendType = backendFw ? 'separate' : null;
-  }
-
-  separator();
-
-  // ── IDE ───────────────────────────────────────────────────────────────────────
-
-  console.log(`\n${bold(blue('Environment'))}`);
-
-  const osName = { darwin: 'macOS', win32: 'Windows', linux: 'Linux' }[process.platform] || process.platform;
-  console.log(`\n  ${dim('OS detected:')} ${bold(osName)}`);
-  console.log(dim('  Scanning for installed IDEs...\n'));
-
-  const ideOptions    = buildIDEOptions(IDE_CANDIDATES);
-  const detectedIDEs  = ideOptions.filter(o => o.detected);
-  const undetectedIDEs = ideOptions.filter(o => !o.detected && o.cmd);
-  const manualOption  = ideOptions.filter(o => !o.cmd);
-  const sortedIdeOptions = [...detectedIDEs, ...undetectedIDEs, ...manualOption];
-
-  if (detectedIDEs.length > 1)     console.log(`\n  ${yellow('Multiple IDEs found on this machine')} — select your preference:\n`);
-  else if (detectedIDEs.length === 1) console.log(`\n  ${green('1 IDE found:')} ${bold(detectedIDEs[0].name)}\n`);
-  else                              console.log(`\n  ${yellow('No IDEs detected on this machine.')}\n`);
-
-  let ideChoice;
-  while (true) {
-    ideChoice = await selectRequired('* IDE / editor (required):', sortedIdeOptions, steps, stepIdx);
-    if (ideChoice === RESTART) { rl.close(); spawn('node', [__filename], { stdio: 'inherit', cwd: ROOT }).on('exit', c => process.exit(c)); return; }
-
-    if (ideChoice.cmd && !ideChoice.detected) {
-      console.log(`\n  ${yellow('⚠')} ${bold(ideChoice.name)} was not detected on this machine.`);
-      console.log(dim('  It may not open automatically when launching a task.\n'));
-      if (!await arrowConfirm('Continue with this IDE anyway?')) { console.log(dim('  Re-selecting...\n')); continue; }
-    }
-
-    if (!ideChoice.cmd) { console.log(dim('  Manual mode — worktree path will be printed at launch.')); break; }
-
-    console.log(dim(`\n  Verifying ${ideChoice.name}...`));
-    const verified = verifyIDE(ideChoice);
-    if (verified.ok) {
-      const versionStr = verified.version ? dim(` (${verified.version})`) : '';
-      console.log(`  ${green('✓')} ${ideChoice.name} confirmed${versionStr}`);
-      break;
-    }
-
-    console.log(`  ${yellow('!')} Could not verify ${ideChoice.name}. The CLI may not be installed or accessible.`);
-    if (await arrowConfirm('Continue with this IDE anyway?')) break;
-    console.log(dim('  Re-selecting...\n'));
-  }
-  steps.push(stepIdx++, 'IDE', ideChoice.name);
 
   // ── Terminal detection ────────────────────────────────────────────────────────
 
@@ -573,7 +428,7 @@ const main = async () => {
     writeConfig(path.join(ROOT, 'backend', 'CLAUDE.md'), {
       PROJECT_NAME:      projectName,
       FRAMEWORK:         backendFw,
-      FRAMEWORK_VERSION: backendFwObj?.version || '',
+      FRAMEWORK_VERSION: answers.backendFwVersion || '',
       LANGUAGE:          backendLang,
       ORM:               backendOrm,
       AUTH:              backendAuth,
