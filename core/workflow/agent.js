@@ -1387,6 +1387,7 @@ ${excludedUrls}
   console.log(`\n${bold('  Workspace is set up and ready.')}\n`);
 
   sessionLoop: while (true) {
+  process.stdout.write("\n");
   const sessionIdx = await arrowSelect('How would you like to start the session?', [
     { label: `${green('→')} IDE + new terminal ${dim('(Claude Code CLI)')}  ${dim('← recommended')}` },
     { label: `${green('→')} IDE only` },
