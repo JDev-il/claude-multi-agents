@@ -1339,10 +1339,10 @@ ${excludedUrls}
     private: true,
     scripts: {
       init:     'multi-agents init',
-      agent:    'node .workflow/agent.js',
-      restart:  'node .workflow/restart.js',
-      reset:    'node .workflow/reset.js',
-      complete: 'node .workflow/complete.js',
+      agent:    `node ${ROOT}/.workflow/agent.js`,
+      restart:  `node ${ROOT}/.workflow/restart.js`,
+      reset:    `node ${ROOT}/.workflow/reset.js`,
+      complete: `node ${ROOT}/.workflow/complete.js`,
     },
   };
   fs.writeFileSync(
