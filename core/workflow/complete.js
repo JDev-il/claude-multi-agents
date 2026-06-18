@@ -268,13 +268,48 @@ const main = async () => {
   separator();
   console.log(`\n${bold('Completing task...')}\n`);
 
-  // ── Auto-commit uncommitted changes in worktree ──────────────────────────────
+  // ── Auto-commit uncommitted changes in worktree (scope-aware staging) ─────────
 
   try {
     const status = execSync('git status --porcelain', { cwd: worktreePath, stdio: 'pipe' }).toString().trim();
     if (status) {
       console.log(`  ${yellow('!')} Uncommitted changes detected - committing before merge...`);
-      execSync('git add .', { cwd: worktreePath, stdio: 'pipe' });
+
+      // Stage only files matching the allowed scope patterns — never root-level framework files
+      const scopeJsonPath   = path.join(worktreePath, 'scope.json');
+      const scopePolicyPath = path.join(ROOT, '.scaffold', 'scope-policy.json');
+      let stagedWithScope = false;
+
+      if (fs.existsSync(scopeJsonPath) && fs.existsSync(scopePolicyPath)) {
+        const scopeMeta   = JSON.parse(fs.readFileSync(scopeJsonPath, 'utf8'));
+        const scopePolicy = JSON.parse(fs.readFileSync(scopePolicyPath, 'utf8'));
+        const policyScope = scopePolicy[scopeMeta.policy];
+        const agentKey    = scopeMeta.agent && scopeMeta.agent.toUpperCase();
+        const override    = policyScope && policyScope.agentOverrides && policyScope.agentOverrides[agentKey];
+        const cfg         = JSON.parse(fs.readFileSync(path.join(ROOT, '.scaffold', '.config.json'), 'utf8'));
+        const scaffolded  = (cfg.scaffolded || {})[scopeMeta.scope];
+        const overrideActive = override && (!override.onlyBeforeScaffolded || !scaffolded);
+        const allowed     = (overrideActive && override.allowed) || (policyScope && policyScope.allowed) || [];
+
+        if (allowed.length > 0) {
+          // Stage each allowed pattern individually
+          for (const pat of allowed) {
+            const target = pat.endsWith('/**') ? pat.slice(0, -3) : pat;
+            try {
+              execSync(`git add ${target}`, { cwd: worktreePath, stdio: 'pipe' });
+            } catch { /* pattern may not exist in this worktree */ }
+          }
+          stagedWithScope = true;
+          console.log(`  ${green('✓')} Staged scope-allowed files only (${allowed.join(', ')})`);
+        }
+      }
+
+      if (!stagedWithScope) {
+        // Fallback — no scope info, stage everything
+        execSync('git add .', { cwd: worktreePath, stdio: 'pipe' });
+        console.log(`  ${yellow('!')} No scope info found - staged all files`);
+      }
+
       execSync(`git commit -m "feat: task completion commit [${branchName}]"`, { cwd: worktreePath, stdio: 'pipe' });
       console.log(`  ${green('✓')} Changes committed`);
     } else {
