@@ -1025,6 +1025,8 @@ const main = async () => {
     }
   }
 
+  let userSeedingContracts = false;
+
   // Contracts check — only for relevant agents, optional for senior devs
 
   const CONTRACTS_SEED_AGENTS = ['LOGIC', 'INIT', 'API'];
@@ -1039,6 +1041,7 @@ const main = async () => {
       rl
     );
     if (seedIdx === 1) {
+      userSeedingContracts = true;
       const manual = await ask(`\n  ${bold('Describe your known interfaces, types, or DTOs')} ${dim('(free text)')}: \n  → `);
       if (manual.trim()) {
         contractsNote = `Contract structure provided by user before session start:\n${manual.trim()}\nBootstrap CONTRACTS.md from this before implementing anything.`;
@@ -1101,7 +1104,7 @@ const main = async () => {
   let skipped  = [];
   contextSection = '';
 
-  if (AGENT_QUESTIONS[agent]) {
+  if (AGENT_QUESTIONS[agent] && userSeedingContracts) {
     let gathering = true;
     while (gathering) {
       const result = await gatherAgentContext(agent);
