@@ -1393,8 +1393,21 @@ ${excludedUrls}
   separator();
   console.log(`\n${bold('  Workspace is set up and ready.')}\n`);
 
+  // Spinner — flushes terminal buffer and signals readiness before prompt renders
+  await new Promise(resolve => {
+    const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+    let i = 0;
+    const spin = setInterval(() => {
+      process.stdout.write(`\r  ${frames[i++ % frames.length]} Preparing session...`);
+    }, 60);
+    setTimeout(() => {
+      clearInterval(spin);
+      process.stdout.write('\r' + ' '.repeat(30) + '\r');
+      resolve();
+    }, 600);
+  });
+
   sessionLoop: while (true) {
-  process.stdout.write("\n");
   const sessionIdx = await arrowSelect('How would you like to start the session?', [
     { label: `${green('→')} IDE + new terminal ${dim('(Claude Code CLI)')}  ${dim('← recommended')}` },
     { label: `${green('→')} IDE only` },
