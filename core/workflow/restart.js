@@ -177,6 +177,8 @@ const main = async () => {
       ...candidates.map(c => ({
         label: c.status === 'AVAILABLE'
           ? `${dim(c.agent)} ${dim(`(${c.scope})`)}  ${dim('not started')}`
+          : c.status === 'COMPLETED'
+          ? `${dim(c.agent)} ${dim(`(${c.scope})`)}  ${green('✓ completed')}`
           : `${bold(c.agent)} ${dim(`(${c.scope})`)}  ${dim(c.branch)}  ${c.status === 'UNTRACKED' ? yellow('untracked') : dim(c.status)}`,
       })),
       { label: dim('← cancel') },

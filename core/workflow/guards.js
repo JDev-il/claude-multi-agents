@@ -125,8 +125,16 @@ const updateTrackingSlot = (tracking, scope, agent, data, ROOT) => {
 const clearTrackingSlot = (tracking, scope, agent, ROOT) => {
   if (!tracking[scope] || !tracking[scope][agent]) return tracking;
 
-  // Preserve missingCount across completes - reset to 0 only on successful complete
-  tracking[scope][agent] = emptySlot();
+  // Mark as COMPLETED rather than wiping — preserves history for display in restart/agent selectors
+  tracking[scope][agent] = {
+    branch:       null,
+    timestamp:    null,
+    launchedAt:   null,
+    status:       'COMPLETED',
+    missingCount: 0,
+    worktreePath: null,
+    completedAt:  new Date().toISOString(),
+  };
 
   const trackingPath = path.join(ROOT, '.scaffold', '.tracking.json');
   fs.writeFileSync(trackingPath, JSON.stringify(tracking, null, 2), 'utf8');
