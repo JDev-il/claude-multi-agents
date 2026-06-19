@@ -1360,6 +1360,21 @@ ${excludedUrls}
   );
   console.log(`  ${green('✓')} package.json proxy written`);
 
+  // ── Write worktree .gitignore — block framework files from agent commits ────
+  const worktreeGitignore = [
+    '# Framework files — never commit these to the agent branch',
+    'package.json',
+    '.claude-scope',
+    'scope.json',
+    'TASK.md',
+    '.vscode/',
+    '.idea/',
+    '.zed/',
+    'node_modules/',
+  ].join('\n') + '\n';
+  fs.writeFileSync(path.join(worktreePath, '.gitignore'), worktreeGitignore, 'utf8');
+  console.log(`  ${green('✓')} .gitignore written (framework files excluded from agent commits)`);
+
   // ── Write .tracking.json slot
 
   guards.updateTrackingSlot(tracking, project, agent, {
