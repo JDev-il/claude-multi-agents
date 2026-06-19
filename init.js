@@ -89,6 +89,14 @@ if (isGlobalCLI) {
 
   if (fs.existsSync(targetDir)) {
     process.chdir(targetDir);
+    // Plant temp package.json if missing — allows npm run init to work as re-entry point
+    if (!fs.existsSync(path.join(targetDir, 'package.json'))) {
+      fs.writeFileSync(
+        path.join(targetDir, 'package.json'),
+        JSON.stringify({ name: path.basename(targetDir), version: '1.0.0', scripts: { init: 'multi-agents init' } }, null, 2),
+        'utf8'
+      );
+    }
   } else {
     fs.mkdirSync(targetDir, { recursive: true });
     process.chdir(targetDir);
