@@ -33,5 +33,9 @@
     "type": "git",
     "url": "git+https://github.com/JDev-il/multi-agents.git"
   },
-  "homepage": "https://github.com/JDev-il/multi-agents#readme"
+  "homepage": "https://github.com/JDev-il/multi-agents#readme",
+  "scripts": {
+    "test": "node test/runner.js",
+    "test:tier1": "node test/runner.js --tier=1"
+  }
 }
