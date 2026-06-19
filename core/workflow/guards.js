@@ -127,9 +127,9 @@ const clearTrackingSlot = (tracking, scope, agent, ROOT) => {
 
   // Mark as COMPLETED rather than wiping — preserves history for display in restart/agent selectors
   tracking[scope][agent] = {
-    branch:       null,
-    timestamp:    null,
-    launchedAt:   null,
+    branch:       tracking[scope][agent].branch || null,
+    timestamp:    tracking[scope][agent].timestamp || null,
+    launchedAt:   tracking[scope][agent].launchedAt || null,
     status:       'COMPLETED',
     missingCount: 0,
     worktreePath: null,

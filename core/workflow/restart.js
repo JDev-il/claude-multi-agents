@@ -87,7 +87,7 @@ const buildCandidates = () => {
 
   for (const scope of ['client', 'backend', 'shared']) {
     for (const [agent, data] of Object.entries(tracking[scope] || {})) {
-      if (!data?.branch) continue;
+      if (!data?.branch && data?.status !== 'COMPLETED') continue;
       const wt = worktrees.find(w => w.branch === data.branch);
       candidates.push({
         scope, agent,
