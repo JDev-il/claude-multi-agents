@@ -54,6 +54,12 @@ const ENTRY_CWD = process.cwd();
 // ── Constants ─────────────────────────────────────────────────────────────────
 const INIT_AGENTS = { client: ['UI'], backend: ['INIT'] };
 
+const AGENTS = {
+  client:  ['UI', 'LOGIC', 'FORMS', 'ROUTING', 'TESTING', 'ACCESSIBILITY'],
+  backend: ['INIT', 'API', 'LOGIC', 'AUTH', 'DB', 'TESTING', 'EVENTS', 'JOBS'],
+  shared:  ['SECURITY'],
+};
+
 const DEPENDENCIES = {
   client:  { UI: ['LOGIC', 'FORMS', 'ROUTING', 'TESTING', 'ACCESSIBILITY'] },
   backend: { INIT: ['API', 'LOGIC', 'AUTH', 'DB', 'EVENTS', 'JOBS', 'TESTING'] },
@@ -96,6 +102,14 @@ const buildCandidates = () => {
     const m = wt.branch.match(/^agent\/(client|backend|shared)\/([A-Z]+)\//);
     if (!m || candidates.find(c => c.branch === wt.branch)) continue;
     candidates.push({ scope: m[1], agent: m[2], branch: wt.branch, worktreePath: wt.path, status: 'UNTRACKED' });
+  }
+
+  // Append available (not yet started) agents
+  for (const scope of ['client', 'backend', 'shared']) {
+    for (const agent of (AGENTS[scope] || [])) {
+      if (candidates.find(c => c.scope === scope && c.agent === agent)) continue;
+      candidates.push({ scope, agent, branch: null, worktreePath: null, status: 'AVAILABLE' });
+    }
   }
 
   return candidates;
@@ -147,9 +161,9 @@ const main = async () => {
 
   const candidates = buildCandidates();
 
-  if (candidates.length === 0) {
-    console.log(yellow('\n  No active agents found. Nothing to restart.\n'));
-    console.log(dim(`  Run ${cyan('npm run agent')} to start a new task.\n`));
+  const activeCandidates = candidates.filter(c => c.status !== 'AVAILABLE');
+  if (activeCandidates.length === 0 && candidates.length === 0) {
+    console.log(yellow('\n  No agents found.\n'));
     rl.close(); process.exit(0);
   }
 
@@ -161,7 +175,9 @@ const main = async () => {
     console.log(`\n${bold('* Select agent to restart:')}\n`);
     const idx = await arrowSelect('Select agent', [
       ...candidates.map(c => ({
-        label: `${bold(c.agent)} ${dim(`(${c.scope})`)}  ${dim(c.branch)}  ${c.status === 'UNTRACKED' ? yellow('untracked') : dim(c.status)}`,
+        label: c.status === 'AVAILABLE'
+          ? `${dim(c.agent)} ${dim(`(${c.scope})`)}  ${dim('not started')}`
+          : `${bold(c.agent)} ${dim(`(${c.scope})`)}  ${dim(c.branch)}  ${c.status === 'UNTRACKED' ? yellow('untracked') : dim(c.status)}`,
       })),
       { label: dim('← cancel') },
     ]);
