@@ -1346,7 +1346,7 @@ ${excludedUrls}
     private: true,
     scripts: {
       init:     'multi-agents init',
-      agent:    `node ${ROOT}/.workflow/agent.js`,
+      agent:    `node ${ROOT}/.workflow/run.js`,
       restart:  `node ${ROOT}/.workflow/restart.js`,
       reset:    `node ${ROOT}/.workflow/reset.js`,
       complete: `node ${ROOT}/.workflow/complete.js`,

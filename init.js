@@ -409,6 +409,10 @@ const main = async () => {
   fs.mkdirSync(WORKFLOW_DEST, { recursive: true });
   copyDir(WORKFLOW_SRC, WORKFLOW_DEST);
   console.log(`  ${green('✓')} Workflow scripts copied (.workflow/)`);
+  try {
+    const cliPkg = require('./package.json');
+    fs.writeFileSync(path.join(WORKFLOW_DEST, '.version'), cliPkg.version, 'utf8');
+  } catch { /* best-effort */ }
 
   writeConfig(path.join(ROOT, 'CLAUDE.md'), { PROJECT_NAME: projectName, PROJECT_ROOT: projectName });
   console.log(`  ${green('✓')} CLAUDE.md configured`);
@@ -596,7 +600,7 @@ Before starting any task, verify:
     dependencies: { prompts: '^2.4.2' },
     scripts: {
       init:     'multi-agents init',
-      agent:    'node .workflow/agent.js',
+      agent:    'node .workflow/run.js',
       restart:  'node .workflow/restart.js',
       reset:    'node .workflow/reset.js',
       complete: 'node .workflow/complete.js',
