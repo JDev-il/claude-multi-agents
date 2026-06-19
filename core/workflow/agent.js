@@ -172,16 +172,17 @@ const openIDE = (worktreePath) => {
 
 
 // ── Open new OS terminal with Claude Code CLI ───────────────────────────────
-const openTerminal = (worktreePath) => {
+const openTerminal = (worktreePath, skipPermissions = false) => {
   const termCmd = config.terminal && config.terminal.cmd;
   if (!termCmd) return false;
+  const claudeCmd = skipPermissions ? 'claude --dangerously-skip-permissions' : 'claude';
   try {
     if (process.platform === 'darwin') {
-      execSync('osascript -e \'tell app "' + termCmd + '" to do script "cd \\"' + worktreePath + '\\" && claude"\'', { stdio: 'pipe' });
+      execSync('osascript -e \'tell app "' + termCmd + '" to do script "cd \\"' + worktreePath + '\\" && ' + claudeCmd + '"\'', { stdio: 'pipe' });
     } else if (process.platform === 'win32') {
-      execSync('start ' + termCmd + ' /k "cd /d ' + worktreePath + ' && claude"', { stdio: 'pipe' });
+      execSync('start ' + termCmd + ' /k "cd /d ' + worktreePath + ' && ' + claudeCmd + '"', { stdio: 'pipe' });
     } else {
-      execSync(termCmd + ' -- bash -c "cd \'' + worktreePath + '\' && claude; exec bash" &', { stdio: 'pipe' });
+      execSync(termCmd + ' -- bash -c "cd \'' + worktreePath + '\' && ' + claudeCmd + '; exec bash" &', { stdio: 'pipe' });
     }
     return true;
   } catch { return false; }
@@ -1407,6 +1408,16 @@ ${excludedUrls}
     }, 600);
   });
 
+  const permIdx = await arrowSelect(
+    'Grant agent full permissions for this session?',
+    [
+      { label: `${green('→')} Yes — skip all permission prompts ${dim('(recommended for agent sessions)')}` },
+      { label: `${dim('→')} No  — I'll approve each action manually` },
+    ],
+    rl
+  );
+  const skipPermissions = permIdx === 0;
+
   sessionLoop: while (true) {
   const sessionIdx = await arrowSelect('How would you like to start the session?', [
     { label: `${green('→')} IDE + new terminal ${dim('(Claude Code CLI)')}  ${dim('← recommended')}` },
@@ -1419,7 +1430,7 @@ ${excludedUrls}
     const openedIDE = openIDE(worktreePath);
     if (openedIDE) console.log(`  ${green('✓')} ${openedIDE} opened`);
     else console.log(`  ${yellow('!')} Could not open IDE - open manually at: ${dim(worktreePath)}`);
-    const termOpened = openTerminal(worktreePath);
+    const termOpened = openTerminal(worktreePath, skipPermissions);
     if (termOpened) console.log(`  ${green('✓')} New terminal opened with Claude Code CLI`);
     else console.log(`  ${yellow('!')} Could not open terminal - run ${cyan('claude')} manually in: ${dim(worktreePath)}`);
     console.log(`\n  ${dim("This window can be closed.")}`);
@@ -1436,7 +1447,7 @@ ${excludedUrls}
     process.exit(0);
 
   } else if (sessionIdx === 2) {
-    const termOpened = openTerminal(worktreePath);
+    const termOpened = openTerminal(worktreePath, skipPermissions);
     if (termOpened) console.log(`  ${green('✓')} New terminal opened with Claude Code CLI`);
     console.log(`\n  ${dim("This window can be closed.")}`);
     rl.close();
