@@ -1412,7 +1412,7 @@ ${excludedUrls}
     { label: `${green('→')} IDE + new terminal ${dim('(Claude Code CLI)')}  ${dim('← recommended')}` },
     { label: `${green('→')} IDE only` },
     { label: `${green('→')} Claude Code CLI only ${dim('(new terminal)')}` },
-    { label: `${dim('?')} I'll continue from here, where do I start?` },
+    { label: `${dim('?')} Still need help?` },
   ], rl);
 
   if (sessionIdx === 0) {
