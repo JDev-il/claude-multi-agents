@@ -863,6 +863,42 @@ const main = async () => {
     }
   }
 
+
+  // Soft gate - shared selected but missing prerequisites
+  if (project === 'shared') {
+    const clientCompleted  = buildEntries.filter(e => e.scope === 'client'  && e.status === 'COMPLETED');
+    const backendCompleted = buildEntries.filter(e => e.scope === 'backend' && e.status === 'COMPLETED');
+    const clientUIДone     = clientCompleted.some(e => e.agent === 'UI');
+    const backendINITDone  = backendCompleted.some(e => e.agent === 'INIT');
+    const missing = [];
+
+    if (!clientUIДone) {
+      missing.push({ item: 'Client scaffold', detail: 'no completed client work found — SECURITY needs to know what auth patterns the client uses' });
+    }
+    if (!backendINITDone) {
+      missing.push({ item: 'Backend INIT', detail: 'backend not scaffolded yet — SECURITY needs to know the backend auth strategy and DB schema' });
+    }
+    if (!contracts.hasContent) {
+      missing.push({ item: 'CONTRACTS.md', detail: 'no shared types defined — auth utilities should align with established contracts' });
+    }
+
+    if (missing.length > 0) {
+      console.log(`\n${yellow('  ⚠ Shared prerequisites not fully met:')}
+`);
+      missing.forEach(m => {
+        console.log(`  ${dim('→')} ${bold(m.item)}`);
+        console.log(`     ${m.detail}\n`);
+      });
+      console.log(`  ${dim('The agent will proceed autonomously and make assumptions about auth patterns.')}`);
+      console.log(`  ${dim('These may need revision once client and backend are fully established.\n')}`);
+      const proceedIdx = await arrowSelect('Shared prerequisites not met:', [
+        { label: `${green('→')} Proceed anyway` },
+        { label: `${yellow('←')} Go back — pick a different scope  ${dim('← recommended')}` },
+      ], rl);
+      if (proceedIdx === 1) continue flowLoop;
+    }
+  }
+
   // ── Select agent (with re-selection loop + back to scope) ────────────────────
 
   const agentOptions = AGENTS[project] || [];
