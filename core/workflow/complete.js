@@ -448,6 +448,47 @@ const main = async () => {
   separator();
   console.log('');
 
+
+  // ── Backend/INIT launch prompt (if user chose 'after' during LOGIC session) ──
+  try {
+    const _tracking = guards.loadTracking(ROOT, config);
+    const beSlot    = _tracking?.backend?.INIT;
+    if (
+      _scope === 'logic' &&
+      _parts[0] === 'agent' && _parts[1] === 'client' &&
+      beSlot?.backendLaunchTiming === 'after' &&
+      beSlot?.status !== 'ACTIVE' &&
+      beSlot?.status !== 'COMPLETED'
+    ) {
+      separator();
+      console.log(`\n  ${yellow('⚡ Ready to scaffold your backend?')}\n`);
+      console.log(`  client/LOGIC is merged. This is the ideal moment to launch backend/INIT.\n`);
+
+      const { spawn: _spawn } = require('child_process');
+      const launchIdx = await new Promise(resolve => {
+        rl2 = readline.createInterface({ input: process.stdin, output: process.stdout });
+        const choices = [
+          '1. Launch backend/INIT now  ← recommended',
+          '2. Skip — I will handle it manually',
+        ];
+        choices.forEach(c => console.log(`  ${c}`));
+        rl2.question('\n  Select (1-2): ', ans => {
+          rl2.close();
+          resolve(parseInt(ans));
+        });
+      });
+
+      if (launchIdx === 1) {
+        console.log(`\n  ${green('✓')} Launching backend/INIT...\n`);
+        rl.close();
+        _spawn('node', [path.join(ROOT, '.workflow', 'agent.js'), '--scope=backend', '--agent=INIT'], {
+          cwd: ROOT, stdio: 'inherit',
+        });
+        return;
+      }
+    }
+  } catch { /* best-effort */ }
+
   rl.close();
 };
 

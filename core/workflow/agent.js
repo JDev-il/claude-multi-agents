@@ -1143,6 +1143,122 @@ const main = async () => {
     }
   }
 
+
+  // ── Backend simultaneous flow (client/LOGIC only, separate backend, first run) ──
+  let backendLaunchTiming = null;
+  const isSimultaneousCandidate =
+    project === 'client' &&
+    agent   === 'LOGIC'  &&
+    config.backend?.type === 'separate' &&
+    !argAgent &&
+    !buildEntries.some(e => e.scope === 'backend') &&
+    !tracking?.backend?.INIT?.backendPromptShown;
+
+  if (isSimultaneousCandidate) {
+    separator();
+    console.log(`\n  ${yellow('⚡ Backend not started yet')}\n`);
+    console.log(`  Your backend has not been scaffolded yet.`);
+    console.log(`  Since client/LOGIC establishes integration contracts, this is the ideal moment to plan backend scaffolding.\n`);
+
+    const intentIdx = await arrowSelect('Would you like to include backend/INIT?', [
+      { label: `${green('→')} Yes — I want to scaffold the backend` },
+      { label: `${dim('→')} No  — continue with client/LOGIC only` },
+    ], rl);
+
+    if (intentIdx === 0) {
+      console.log('');
+      const timingIdx = await arrowSelect('When would you like to scaffold backend/INIT?', [
+        { label: `${green('→')} Now   — open backend/INIT workspace alongside this LOGIC session\n              ${dim('A second IDE window will open. Both agents run in parallel.')}` },
+        { label: `${dim('→')} After — launch backend/INIT when LOGIC completes\n              ${dim('complete.js will prompt you immediately after merge.')}` },
+        { label: `${dim('→')} Skip  — changed my mind, continue with client/LOGIC only` },
+      ], rl);
+
+      if (timingIdx === 0) backendLaunchTiming = 'now';
+      else if (timingIdx === 1) backendLaunchTiming = 'after';
+      else backendLaunchTiming = 'skip';
+    } else {
+      backendLaunchTiming = 'skip';
+    }
+
+    // Write flag to backend/INIT tracking slot — prevents prompt from showing again
+    guards.updateTrackingSlot(tracking, 'backend', 'INIT', {
+      backendPromptShown:  true,
+      backendLaunchTiming,
+    }, ROOT);
+
+    // Inject backend coordination block into TASK.md contextSection
+    if (backendLaunchTiming === 'now') {
+      contextSection += `\n---\n\n## Backend Coordination\n\nBackend/INIT is running in parallel in a separate workspace.\nEstablish CONTRACTS.md entries early — the backend agent will consume them.\nDo not wait for backend confirmation. Work autonomously on client scope.\n`;
+    } else if (backendLaunchTiming === 'after') {
+      contextSection += `\n---\n\n## Backend Coordination\n\nBackend/INIT will launch after this LOGIC session completes.\nBe deliberate about API contracts — document all integration points in CONTRACTS.md.\nThe backend agent will use these as its starting reference.\n`;
+    }
+
+    // If Now — create backend/INIT worktree immediately
+    if (backendLaunchTiming === 'now') {
+      const beTimestamp    = Date.now();
+      const beBranchName   = `agent/backend/init/${beTimestamp}`;
+      const beWorktreeName = `${config.projectName.toLowerCase().replace(/\s+/g, '-')}-backend-init-${beTimestamp}`;
+      const beWorktreePath = path.join(ROOT, 'worktrees', beWorktreeName);
+
+      console.log(`\n  ${dim('Setting up backend/INIT workspace...')}\n`);
+
+      try {
+        execSync(`git worktree add "${beWorktreePath}" -b ${beBranchName}`, { cwd: ROOT, stdio: 'pipe' });
+
+        // Framework files
+        const beScope = generateClaudeScope({ project: 'backend', agent: 'INIT', branchName: beBranchName, worktreePath: beWorktreePath });
+        fs.writeFileSync(path.join(beWorktreePath, '.claude-scope'), beScope, 'utf8');
+
+        const beTask = AGENT_DESCRIPTIONS.backend?.INIT || 'scaffolds backend architecture, folder structure, DB setup, wiring config and contracts';
+        const beTaskMd = generateTaskMd({ project: 'backend', agent: 'INIT', task: beTask, branchName: beBranchName, contextSection: '', remoteSetupSection: '' });
+        fs.writeFileSync(path.join(beWorktreePath, 'TASK.md'), beTaskMd, 'utf8');
+
+        const bePkg = {
+          name: `${config.projectName.toLowerCase().replace(/\s+/g, '-')}-worktree`,
+          version: '1.0.0', private: true,
+          scripts: {
+            init:     'multi-agents init',
+            agent:    `node "${ROOT}/.workflow/run.js"`,
+            restart:  `node "${ROOT}/.workflow/restart.js"`,
+            reset:    `node "${ROOT}/.workflow/reset.js"`,
+            complete: `node "${ROOT}/.workflow/complete.js"`,
+          },
+        };
+        fs.writeFileSync(path.join(beWorktreePath, 'package.json'), JSON.stringify(bePkg, null, 2), 'utf8');
+
+        const beGitignore = ['# Framework files — never commit these to the agent branch', 'package.json', '.claude-scope', 'scope.json', 'TASK.md', '.vscode/', '.idea/', '.zed/', 'node_modules/'].join('\n') + '\n';
+        fs.writeFileSync(path.join(beWorktreePath, '.gitignore'), beGitignore, 'utf8');
+
+        // Tracking
+        guards.updateTrackingSlot(tracking, 'backend', 'INIT', {
+          branch:      beBranchName,
+          timestamp:   beTimestamp,
+          launchedAt:  new Date().toISOString(),
+          status:      'ACTIVE',
+          worktreePath: beWorktreePath,
+          backendPromptShown:  true,
+          backendLaunchTiming: 'now',
+        }, ROOT);
+
+        // TASKS_HISTORY
+        tasksHistory.ensureHistoryFile(ROOT);
+        tasksHistory.writeSessionEntry(ROOT, { scope: 'backend', agent: 'INIT', branch: beBranchName, task: beTask, launchedAt: new Date().toISOString() });
+
+        console.log(`  ${green('✓')} Backend/INIT worktree created: worktrees/${beWorktreeName}`);
+
+        // Open backend IDE window
+        const beIdeOpened = openIDE(beWorktreePath);
+        if (!beIdeOpened) console.log(`  ${yellow('!')} Could not open IDE for backend — open manually at: ${dim(beWorktreePath)}`);
+        console.log(`  ${green('✓')} Backend/INIT workspace open — start a Claude Code session there when ready\n`);
+
+      } catch (e) {
+        console.log(`  ${yellow('⚠')} Could not create backend/INIT worktree: ${e.message}`);
+      }
+    }
+
+    separator();
+  }
+
   separator();
 
   // ── Confirm ───────────────────────────────────────────────────────────────────
