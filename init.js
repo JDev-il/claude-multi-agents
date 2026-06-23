@@ -78,7 +78,7 @@ const projectArg  = isGlobalCLI ? args[1] : null;
 
 if (isReInit) {
   try {
-    const gitCommonDir = execSync('git rev-parse --git-common-dir', { encoding: 'utf8' }).trim();
+    const gitCommonDir = execSync('git rev-parse --git-common-dir', { encoding: 'utf8', stdio: 'pipe' }).trim();
     const repoRoot = path.resolve(gitCommonDir, '..');
     process.chdir(repoRoot);
   } catch { /* stay in current directory */ }
