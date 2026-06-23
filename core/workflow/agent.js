@@ -836,6 +836,52 @@ const main = async () => {
 
   // Soft gate - backend selected but missing prerequisites
   if (project === 'backend') {
+    // Architectural change warning — no backend/ folder + integrated backend config
+    const backendFolderExists = fs.existsSync(path.join(ROOT, 'backend'));
+    const isIntegrated = config.backend?.type === 'integrated';
+
+    if (!backendFolderExists) {
+      separator();
+      console.log(`\n  ${yellow('⚠ No backend/ folder detected')}
+`);
+      if (isIntegrated) {
+        console.log(`  This project currently uses ${bold('integrated backend')} (${dim(config.frontend?.type || 'client framework')}).`);
+        console.log(`  Adding a separate backend will change your project architecture:
+`);
+      } else {
+        console.log(`  A ${bold('backend/')} directory does not exist yet.`);
+        console.log(`  Proceeding will create it and establish a separate backend:
+`);
+      }
+      console.log(`  ${dim('→')} A new ${bold('backend/')} directory will be created`);
+      console.log(`  ${dim('→')} Client API calls will need redirecting to the new backend`);
+      console.log(`  ${dim('→')} CONTRACTS.md will need updating`);
+      if (isIntegrated) {
+        console.log(`  ${dim('→')} Project config will update to ${bold('separate')} backend type
+`);
+      }
+      console.log('');
+
+      const archIdx = await arrowSelect('How would you like to proceed?', [
+        { label: `${green('→')} Proceed — I want to add a separate backend` },
+        { label: `${yellow('←')} Go back — keep current setup ${dim('← recommended')}` },
+      ], rl);
+
+      if (archIdx === 1) continue flowLoop;
+
+      // Update config to separate if was integrated
+      if (isIntegrated) {
+        try {
+          const cfgPath = path.join(ROOT, '.scaffold', '.config.json');
+          const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+          cfg.backend.type = 'separate';
+          fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2), 'utf8');
+          console.log(`  ${green('✓')} Project config updated to separate backend
+`);
+        } catch {}
+      }
+    }
+
     const clientCompleted = buildEntries.filter(e => e.scope === 'client' && e.status === 'COMPLETED');
     const clientLogicDone = clientCompleted.some(e => e.agent === 'LOGIC');
     const missing = [];
@@ -947,6 +993,34 @@ const main = async () => {
     if (agentIdx === agentOptions.length) { agent = null; continue flowLoop; }
     agent = agentOptions[agentIdx];
     contractsNote = '';
+
+    // ── Check for OTHER active agents in same scope ───────────────────────────
+    const otherActiveInScope = Object.entries(tracking?.[project] || {})
+      .filter(([a, data]) => a !== agent && data?.status === 'ACTIVE');
+
+    if (otherActiveInScope.length > 0) {
+      separator();
+      console.log(`\n  ${yellow('⚠ Active agent detected in ' + project + ' scope')}
+`);
+      for (const [a, data] of otherActiveInScope) {
+        console.log(`  ${dim('→')} ${bold(a)} is currently ${yellow('ACTIVE')}`);
+        console.log(`     Branch  : ${dim(data.branch)}`);
+        console.log(`     Launched: ${dim(data.launchedAt ? new Date(data.launchedAt).toLocaleString() : 'unknown')}
+`);
+      }
+      console.log(`  ${yellow('Launching')} ${bold(agent)} ${yellow('alongside an active agent in the same scope means:')}`);
+      console.log(`  ${dim('→')} Both agents may write to overlapping files`);
+      console.log(`  ${dim('→')} Scope violations may occur at merge time`);
+      console.log(`  ${dim('→')} CONTRACTS.md may receive conflicting entries
+`);
+
+      const warningIdx = await arrowSelect('How would you like to proceed?', [
+        { label: `${yellow('→')} Proceed anyway ${dim('— I understand the risks')}` },
+        { label: `${green('←')} Go back — pick a different agent ${dim('← recommended')}` },
+      ], rl);
+
+      if (warningIdx === 1) continue agentLoop;
+    }
 
     // Agent already active - decisional block
   const { active, slot: activeSlot } = guards.checkAgentActive(tracking, project, agent);
@@ -1095,6 +1169,32 @@ const main = async () => {
   } // end else (argAgent bypass)
   } // end if (project !== 'cloud')
 
+  // ── First-run project context question (UI agent only, no completed agents) ──
+  let projectContext = '';
+  const isFirstRun = project === 'client' && agent === 'UI' && buildEntries.filter(e => e.status === 'COMPLETED').length === 0;
+
+  if (isFirstRun) {
+    separator();
+    console.log(`\n  ${bold('Before we begin...')}
+`);
+
+    if (prompts && process.stdin.isTTY) {
+      const ctxRes = await prompts({
+        type:    'text',
+        name:    'value',
+        message: '* What are you building?',
+        initial: 'e.g. A stock market prediction app with AI insights and portfolio tracking',
+      }, { onCancel: () => process.exit(0) });
+      const rawCtx = (ctxRes.value || '').trim();
+      const isPlaceholderCtx = rawCtx.startsWith('e.g. ');
+      projectContext = isPlaceholderCtx ? '' : rawCtx;
+    } else {
+      console.log(dim('  (optional — helps the agent make better decisions)'));
+      const input = await ask(`\n${bold('* What are you building?')}: `);
+      projectContext = input.trim();
+    }
+  }
+
   // ── Task description ──────────────────────────────────────────────────────────
 
   separator();
@@ -1141,6 +1241,11 @@ const main = async () => {
   let answers  = {};
   let skipped  = [];
   contextSection = '';
+
+  // Inject project context if provided on first UI run
+  if (projectContext) {
+    contextSection += `\n---\n\n## Project Context\n\n${projectContext}\n\nUse this as the primary directive for what you are building. All component names, page structure, and UI decisions should align with this project description.\n`;
+  }
 
   if (AGENT_QUESTIONS[agent] && userSeedingContracts) {
     let gathering = true;
