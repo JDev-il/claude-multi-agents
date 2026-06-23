@@ -56,6 +56,9 @@ const copyWorkflow = (cliRoot) => {
 };
 
 const findCliRoot = () => {
+  // Local node_modules first (npx or local install)
+  const localPkg = path.join(__dirname, '..', 'node_modules', 'multi-agents-cli');
+  if (fs.existsSync(localPkg)) return localPkg;
   try {
     const globalPkg = execSync('npm root -g', { stdio: 'pipe', encoding: 'utf8' }).trim();
     const p = path.join(globalPkg, 'multi-agents-cli');
