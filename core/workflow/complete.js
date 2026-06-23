@@ -442,11 +442,53 @@ const main = async () => {
   if (_agent) console.log(`  ${dim('Agent')}  : ${green(_agent)} ${dim('(' + _scope + ')')}`);
   if (_task)  console.log(`  ${dim('Task')}   : ${dim(_task)}`);
   console.log(`  ${dim('Branch')} : ${green(branchName)} merged into ${green('main')}\n`);
-  console.log(`  ${bold('What to do next:')}\n`);
-  console.log(`  Start a new task:`);
-  console.log(`  ${cyan('npm run agent')}\n`);
-  separator();
-  console.log('');
+
+  // ── Derive next step from tracking ──────────────────────────────────────────
+  const AGENT_ORDER = {
+    client:  ['UI', 'LOGIC', 'FORMS', 'ROUTING', 'TESTING', 'ACCESSIBILITY'],
+    backend: ['INIT', 'API', 'LOGIC', 'AUTH', 'DB', 'TESTING', 'EVENTS', 'JOBS'],
+    shared:  ['SECURITY'],
+  };
+  const SCOPE_ORDER = ['client', 'backend', 'shared'];
+
+  try {
+    const _tracking = guards.loadTracking(ROOT, config);
+
+    const findNextInScope = (scope) => {
+      const order = AGENT_ORDER[scope] || [];
+      for (const a of order) {
+        const slot = (_tracking[scope] || {})[a];
+        if (!slot || (slot.status !== 'COMPLETED' && slot.status !== 'ACTIVE')) return a;
+      }
+      return null;
+    };
+
+    let nextScope = null;
+    let nextAgent = null;
+
+    const scopesToCheck = [_scope, ...SCOPE_ORDER.filter(s => s !== _scope)];
+    for (const s of scopesToCheck) {
+      const n = findNextInScope(s);
+      if (n) { nextScope = s; nextAgent = n; break; }
+    }
+
+    separator();
+    console.log(`\n  ${bold('What to do next:')}`);
+
+    if (nextAgent) {
+      console.log(`\n  ${green('→')} ${bold(nextAgent)} ${dim('(' + nextScope + ')')}`);
+      console.log(`\n  ${cyan('npm run agent')}`);
+      console.log(`  ${dim('Select: ' + nextScope + ' → ' + nextAgent)}`);
+    } else {
+      console.log(`\n  ${cyan('npm run agent')}`);
+    }
+  } catch {
+    separator();
+    console.log(`\n  ${bold('What to do next:')}\n`);
+    console.log(`  ${cyan('npm run agent')}`);
+  }
+
+  console.log('\n');
 
 
   // ── Backend/INIT launch prompt (if user chose 'after' during LOGIC session) ──
