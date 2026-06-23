@@ -1497,6 +1497,13 @@ Mark each step complete. Only proceed to the task below when all are checked.
     });
     console.log(`  ${green('✓')} Worktree created: worktrees/${worktreeName}`);
   } catch (err) {
+    const msg = err.stderr?.toString() || err.message || '';
+    if (msg.includes('not a git repository')) {
+      console.error(`
+  ${red('✖')} Not a git repository. Run git init first, then npm run init.
+`);
+      process.exit(1);
+    }
     console.log(`  ${yellow('!')} Worktree may already exist - continuing.`);
   }
 
