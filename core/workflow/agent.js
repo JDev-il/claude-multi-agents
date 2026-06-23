@@ -932,12 +932,13 @@ const main = async () => {
 
     const agentChoices = [
       ...agentOptions.map(a => {
-        const desc = dim(`  ${AGENT_DESCRIPTIONS[project]?.[a] || ''}`);
-        const tag  = a === recommendedAgent
-          ? cyan(completedAgents.length === 0 ? '  ← start here' : '  ← next step')
-          : '';
-        const label = a === recommendedAgent ? bold(a) : a;
-        return { label: `${label}${tag}${desc}` };
+        const desc      = dim(`  ${AGENT_DESCRIPTIONS[project]?.[a] || ''}`);
+        const completed = completedAgents.includes(a);
+        const isNext    = a === recommendedAgent;
+        const indicator = completed ? green('[✓]') : isNext ? cyan(' → ') : dim('[ ]');
+        const label     = completed ? dim(a) : isNext ? bold(a) : a;
+        const tag       = isNext ? cyan(completedAgents.length === 0 ? '  ← start here' : '  ← next step') : '';
+        return { label: `${indicator} ${label}${tag}${desc}` };
       }),
       { label: dim('← back to scope selection') },
     ];
