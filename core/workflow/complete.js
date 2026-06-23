@@ -395,21 +395,21 @@ const main = async () => {
 
   try {
     const CLIENT_START = {
-      'Next.js':    'npm run dev',
-      'Nuxt':       'npm run dev',
-      'SvelteKit':  'npm run dev',
-      'Remix':      'npm run dev',
-      'Vite+React': 'npm run dev',
-      'Angular':    'npx ng serve',
+      'Next.js':    'cd client && npm install && npm run dev',
+      'Nuxt':       'cd client && npm install && npm run dev',
+      'SvelteKit':  'cd client && npm install && npm run dev',
+      'Remix':      'cd client && npm install && npm run dev',
+      'Vite+React': 'cd client && npm install && npm run dev',
+      'Angular':    'cd client && npm install && npx ng serve',
     };
     const BACKEND_START = {
-      'NestJS':   'npm run start:dev',
-      'Express':  'npm run dev',
-      'Fastify':  'npm run dev',
-      'Django':   'python manage.py runserver',
-      'FastAPI':  'uvicorn main:app --reload',
-      'Laravel':  'php artisan serve',
-      'Rails':    'bin/rails server',
+      'NestJS':   'cd backend && npm install && npm run start:dev',
+      'Express':  'cd backend && npm install && npm run dev',
+      'Fastify':  'cd backend && npm install && npm run dev',
+      'Django':   'cd backend && pip install -r requirements.txt && python manage.py runserver',
+      'FastAPI':  'cd backend && pip install -r requirements.txt && uvicorn main:app --reload',
+      'Laravel':  'cd backend && composer install && php artisan serve',
+      'Rails':    'cd backend && bundle install && bin/rails server',
     };
 
     const pkgPath = path.join(ROOT, 'package.json');
