@@ -418,10 +418,11 @@ const main = async () => {
       if (!pkg.scripts) pkg.scripts = {};
 
       const parts = branchName.split('/');
-      const mergedScope = parts.length >= 4 ? parts[1] : null;
-      const mergedAgent = parts.length >= 4 ? parts[2].toUpperCase() : null;
+      const _t = guards.loadTracking(ROOT, config);
+      const uiDone   = _t?.client?.UI?.status   === 'COMPLETED';
+      const initDone = _t?.backend?.INIT?.status === 'COMPLETED';
 
-      if (mergedScope === 'client' && mergedAgent === 'UI') {
+      if (uiDone) {
         const fw = config.client && config.client.framework;
         const cmd = CLIENT_START[fw];
         if (cmd && !pkg.scripts['start:client']) {
@@ -431,7 +432,7 @@ const main = async () => {
         }
       }
 
-      if (mergedScope === 'backend' && mergedAgent === 'INIT') {
+      if (initDone) {
         const fw = config.backend && config.backend.framework;
         const cmd = BACKEND_START[fw];
         if (cmd && !pkg.scripts['start:backend']) {
