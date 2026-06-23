@@ -17,7 +17,6 @@
 
 const fs           = require('fs');
 const path         = require('path');
-const readline     = require('readline');
 const { execSync } = require('child_process');
 
 let prompts = null;
@@ -130,8 +129,7 @@ const main = async () => {
 
   // ── Step 1: First confirmation ────────────────────────────────────────────────
 
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  const ask = (q) => new Promise((resolve) => rl.question(q, (a) => resolve(a.trim())));
+
 
   if (prompts && process.stdin.isTTY) {
     const step1 = await prompts({
@@ -148,13 +146,6 @@ const main = async () => {
       console.log(dim('\n  Reset cancelled.\n'));
       process.exit(0);
     }
-  } else {
-    const ans = await ask(`  ${bold('Are you sure?')} ${dim('(y/N)')}: `);
-    if (ans.toLowerCase() !== 'y') {
-      console.log(dim('\n  Reset cancelled.\n'));
-      rl.close();
-      process.exit(0);
-    }
   }
 
   // ── Step 2: Type project name ─────────────────────────────────────────────────
@@ -163,8 +154,12 @@ const main = async () => {
   console.log(`  ${yellow('To confirm, type the project name exactly:')}`);
   console.log(`  ${cyan(bold(projectName))}\n`);
 
-  const typed = await ask(`  ${bold('Project name')}: `);
-  rl.close();
+  const step2 = await prompts({
+    type:    'text',
+    name:    'value',
+    message: 'Project name',
+  }, { onCancel: () => process.exit(0) });
+  const typed = (step2.value || '').trim();
 
   if (typed !== projectName) {
     console.log(`\n${red('  ✗ Project name does not match. Reset cancelled.')}\n`);
