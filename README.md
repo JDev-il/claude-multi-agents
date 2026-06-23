@@ -93,7 +93,7 @@ You and agents co-build - each owning a defined part of the codebase. Agent task
 Next.js - Angular - Vue/Nuxt - SvelteKit - Vite+React - Remix
 
 ### Backend (separate)
-Express - NestJS - Fastify - FastAPI - Django
+Express - NestJS - Fastify - FastAPI - Django - Laravel - Rails
 
 Each framework has a dedicated scaffold instruction file in `.frameworks/client/` and `.frameworks/backend/` - agents read these before scaffolding to ensure files land in the correct location.
 
@@ -281,6 +281,22 @@ On completion, scope is validated and work merges into `main`. The final `main` 
 }
 ```
 
-**Status values:** `null` (never launched) - `ACTIVE` (running) - `MISSING` (worktree deleted without completing)
+**Status values:** `null` (never launched) - `ACTIVE` (running) - `COMPLETED` (merged into main) - `MISSING` (worktree deleted without completing)
 
 Managed entirely by `agent.js` and `complete.js`. Never edit manually.
+
+---
+
+## What's new in v1.1.0
+
+**Init flow**
+- Step counter (`Step N of 12`) shown throughout the configuration flow
+- Back-navigation fully wired — go back to any previous step and resume without re-answering everything
+
+**After merge**
+- `npm run complete` now surfaces the next recommended agent explicitly based on tracking state
+- `start:client` script written into `package.json` after `client/UI` merges
+- `start:backend` script written into `package.json` after `backend/INIT` merges
+
+**Agent templates**
+- Every agent now includes a `Session Close` block — explicit next-step instructions after Definition of Done
