@@ -391,6 +391,58 @@ const main = async () => {
     }
   } catch { /* best-effort */ }
 
+  // ── Write start:client / start:backend into root package.json ───────────────
+
+  try {
+    const CLIENT_START = {
+      'Next.js':    'npm run dev',
+      'Nuxt':       'npm run dev',
+      'SvelteKit':  'npm run dev',
+      'Remix':      'npm run dev',
+      'Vite+React': 'npm run dev',
+      'Angular':    'npx ng serve',
+    };
+    const BACKEND_START = {
+      'NestJS':   'npm run start:dev',
+      'Express':  'npm run dev',
+      'Fastify':  'npm run dev',
+      'Django':   'python manage.py runserver',
+      'FastAPI':  'uvicorn main:app --reload',
+      'Laravel':  'php artisan serve',
+      'Rails':    'bin/rails server',
+    };
+
+    const pkgPath = path.join(ROOT, 'package.json');
+    if (fs.existsSync(pkgPath)) {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+      if (!pkg.scripts) pkg.scripts = {};
+
+      const parts = branchName.split('/');
+      const mergedScope = parts.length >= 4 ? parts[1] : null;
+      const mergedAgent = parts.length >= 4 ? parts[2].toUpperCase() : null;
+
+      if (mergedScope === 'client' && mergedAgent === 'UI') {
+        const fw = config.client && config.client.framework;
+        const cmd = CLIENT_START[fw];
+        if (cmd && !pkg.scripts['start:client']) {
+          pkg.scripts['start:client'] = cmd;
+          fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
+          console.log(`  ${green('✓')} start:client added to package.json (${cmd})`);
+        }
+      }
+
+      if (mergedScope === 'backend' && mergedAgent === 'INIT') {
+        const fw = config.backend && config.backend.framework;
+        const cmd = BACKEND_START[fw];
+        if (cmd && !pkg.scripts['start:backend']) {
+          pkg.scripts['start:backend'] = cmd;
+          fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf8');
+          console.log(`  ${green('✓')} start:backend added to package.json (${cmd})`);
+        }
+      }
+    }
+  } catch { /* best-effort */ }
+
   // ── Update scaffold flags ──────────────────────────────────────────────────
 
   try {
