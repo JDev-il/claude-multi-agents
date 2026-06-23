@@ -216,7 +216,7 @@ const main = async () => {
     }
   }
 
-  // Wipe project files (keep .git temporarily for branch ops above)
+  // Wipe project files (keep .git — git repo is infrastructure, not framework state)
   const keepList = ['.git'];
   const entries  = fs.readdirSync(ROOT);
   for (const entry of entries) {
@@ -227,11 +227,6 @@ const main = async () => {
   }
   console.log(`  ${green('✓')} Project files removed`);
 
-  // Remove .git
-  try {
-    fs.rmSync(path.join(ROOT, '.git'), { recursive: true, force: true });
-    console.log(`  ${green('✓')} Git history removed`);
-  } catch {}
 
   // ── Re-plant package.json ────────────────────────────────────────────
 
