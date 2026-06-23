@@ -980,10 +980,11 @@ const main = async () => {
       ...agentOptions.map(a => {
         const desc      = dim(`  ${AGENT_DESCRIPTIONS[project]?.[a] || ''}`);
         const completed = completedAgents.includes(a);
-        const isNext    = a === recommendedAgent;
-        const indicator = completed ? green('[✓]') : isNext ? cyan(' → ') : dim('[ ]');
-        const label     = completed ? dim(a) : isNext ? bold(a) : a;
-        const tag       = isNext ? cyan(completedAgents.length === 0 ? '  ← start here' : '  ← next step') : '';
+        const isActive  = tracking?.[project]?.[a]?.status === 'ACTIVE';
+        const isNext    = a === recommendedAgent && !isActive;
+        const indicator = completed ? green('[✓]') : isActive ? yellow('[▶]') : isNext ? cyan(' → ') : dim('[ ]');
+        const label     = completed ? dim(a) : isActive ? yellow(bold(a)) : isNext ? bold(a) : a;
+        const tag       = isActive ? yellow('  ← in progress') : isNext ? cyan(completedAgents.length === 0 ? '  ← start here' : '  ← next step') : '';
         return { label: `${indicator} ${label}${tag}${desc}` };
       }),
       { label: dim('← back to scope selection') },
