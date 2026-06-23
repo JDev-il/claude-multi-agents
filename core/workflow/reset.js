@@ -233,12 +233,25 @@ const main = async () => {
     console.log(`  ${green('✓')} Git history removed`);
   } catch {}
 
+  // ── Re-plant package.json ────────────────────────────────────────────
+
+  try {
+    const freshPkg = {
+      name:    projectName.toLowerCase().replace(/\s+/g, '-'),
+      version: '1.0.0',
+      scripts: { init: 'multi-agents init' },
+    };
+    fs.writeFileSync(path.join(ROOT, 'package.json'), JSON.stringify(freshPkg, null, 2) + '\n', 'utf8');
+    console.log('  ' + green('\u2713') + ' package.json re-planted');
+  } catch { /* best-effort */ }
+
   // ── Post-wipe instructions ────────────────────────────────────────────────────
 
   separator();
   console.log(`${green(bold('  Project wiped successfully.'))}\n`);
-  console.log(`  To start fresh:\n`);
-  console.log(`  ${cyan(`cd .. && multi-agents init ${projectName}`)}\n`);
+  console.log(`  Run to start fresh:\n`);
+  console.log(`  ${cyan('npm run init')}
+`);
   separator();
 
   process.exit(0);
