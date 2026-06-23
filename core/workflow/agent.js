@@ -1389,6 +1389,19 @@ const main = async () => {
 
         console.log(`  ${green('✓')} Backend/INIT worktree created: worktrees/${beWorktreeName}`);
 
+        // BUILD_STATE.md entry
+        const beBuildStatePath = path.join(ROOT, 'BUILD_STATE.md');
+        if (fs.existsSync(beBuildStatePath)) {
+          const beDate     = new Date().toISOString().split('T')[0];
+          const beLogEntry = `| ${beDate} | INIT | backend | ${beTask} | IN PROGRESS | ${beBranchName} |\n`;
+          fs.appendFileSync(beBuildStatePath, beLogEntry, 'utf8');
+          try {
+            execSync('git add BUILD_STATE.md', { cwd: ROOT, stdio: 'pipe' });
+            execSync(`git commit --no-verify -m "build: INIT task started on backend [${beBranchName}]"`, { cwd: ROOT, stdio: 'pipe' });
+            console.log(`  ${green('✓')} BUILD_STATE.md updated`);
+          } catch {}
+        }
+
         // Open backend IDE window
         const beIdeOpened = openIDE(beWorktreePath);
         if (!beIdeOpened) console.log(`  ${yellow('!')} Could not open IDE for backend — open manually at: ${dim(beWorktreePath)}`);
