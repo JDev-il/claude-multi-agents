@@ -275,7 +275,7 @@ const main = async () => {
           ],
         }, { onCancel: () => process.exit(0) });
         if (confirm.value !== 'yes') { console.log(dim('\n  Cancelled.\n')); process.exit(0); }
-        const resetChild = spawn('node', [path.join(ROOT, '.workflow', 'reset.js')], { stdio: 'inherit', cwd: ROOT });
+        const resetChild = spawn('node', [path.join(ROOT, '.workflow', 'reset.js'), '--confirmed'], { stdio: 'inherit', cwd: ROOT });
         resetChild.on('exit', code => process.exit(code ?? 0));
         return;
       } else {

@@ -69,6 +69,7 @@ const main = async () => {
 
   // ── Load config and tracking ─────────────────────────────────────────────────
 
+  const confirmed = process.argv.includes('--confirmed');
   const config   = fs.existsSync(CONFIG_PATH)   ? JSON.parse(fs.readFileSync(CONFIG_PATH,   'utf8')) : {};
   const tracking = fs.existsSync(TRACKING_PATH) ? JSON.parse(fs.readFileSync(TRACKING_PATH, 'utf8')) : {};
   const projectName = config.projectName || path.basename(ROOT);
@@ -89,11 +90,12 @@ const main = async () => {
 
   let remoteUrl = null;
   try {
-    remoteUrl = execSync('git remote get-url origin', { cwd: ROOT, encoding: 'utf8' }).trim();
+    remoteUrl = execSync('git remote get-url origin', { cwd: ROOT, encoding: 'utf8', stdio: 'pipe' }).trim();
   } catch {}
 
   // ── Display warning ───────────────────────────────────────────────────────────
 
+  if (!confirmed) {
   separator();
   console.log(`${red(bold('  ⚠ FULL PROJECT RESET'))}\n`);
   console.log(`  ${bold('This will permanently delete:')}\n`);
@@ -168,6 +170,8 @@ const main = async () => {
     console.log(`\n${red('  ✗ Project name does not match. Reset cancelled.')}\n`);
     process.exit(1);
   }
+
+  } // end if (!confirmed)
 
   // ── Execute wipe ──────────────────────────────────────────────────────────────
 
