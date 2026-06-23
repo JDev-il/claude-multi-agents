@@ -1233,7 +1233,7 @@ const main = async () => {
     if (backendLaunchTiming === 'now') {
       const beTimestamp    = Date.now();
       const beBranchName   = `agent/backend/init/${beTimestamp}`;
-      const beWorktreeName = `${config.projectName.toLowerCase().replace(/\s+/g, '-')}-backend-init-${beTimestamp}`;
+      const beWorktreeName = `backend-${config.projectName.toLowerCase().replace(/\s+/g, '-')}-init-${beTimestamp}`;
       const beWorktreePath = path.join(ROOT, 'worktrees', beWorktreeName);
 
       console.log(`\n  ${dim('Setting up backend/INIT workspace...')}\n`);

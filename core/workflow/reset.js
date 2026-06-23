@@ -79,7 +79,7 @@ const main = async () => {
   for (const scope of ['client', 'backend', 'shared']) {
     const agents = tracking[scope] || {};
     for (const [agent, data] of Object.entries(agents)) {
-      if (data && data.branch) {
+      if (data && data.branch && data.status !== 'COMPLETED') {
         activeAgents.push({ scope, agent, data });
       }
     }
