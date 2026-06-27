@@ -14,3 +14,11 @@ node_modules/
 *.DS_Store
 !core/templates/shared/
 !core/templates/shared/**
+!core/templates/client/
+!core/templates/client/**
+!core/templates/backend/
+!core/templates/backend/**
+!core/templates/.agents/
+!core/templates/.agents/**
+!core/templates/.frameworks/
+!core/templates/.frameworks/**
