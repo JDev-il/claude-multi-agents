@@ -354,7 +354,23 @@ const runMissingGate = async (params) => {
   const coexistence = coexistenceCheck(branch, ROOT);
 
   // Display coexistence results
-  if (!coexistence.remoteExists) {
+  if (!coexistence.remoteExists && coexistence.divergenceCount === 0) {
+    console.log(`  ${dim('Remote')}   : ${red('not found - branch was deleted remotely')}`);
+    console.log(`  ${dim('Divergence')}: ${green('none - branch is up to date with main')}`);
+    console.log(`\n  ${dim('No data loss detected - auto-resetting and continuing...\n')}`);
+
+    // Auto-reset: remove worktree, delete local branch, clear tracking
+    if (slot.worktreePath) {
+      const absoluteWorktreePath = path.isAbsolute(slot.worktreePath) ? slot.worktreePath : path.resolve(ROOT, slot.worktreePath);
+      try { execSync(`git worktree remove "${absoluteWorktreePath}" --force`, { cwd: ROOT, stdio: 'pipe' }); } catch {}
+    }
+    try { execSync(`git branch -D ${branch}`, { cwd: ROOT, stdio: 'pipe' }); } catch {}
+    tracking[scope][agent] = emptySlot();
+    const trackingPath = path.join(ROOT, '.scaffold', '.tracking.json');
+    fs.writeFileSync(trackingPath, JSON.stringify(tracking, null, 2), 'utf8');
+    console.log(`  ${green('✓')} Auto-reset complete - launching fresh ${agent} task.\n`);
+    return { action: 'reset' };
+  } else if (!coexistence.remoteExists) {
     console.log(`  ${dim('Remote')}   : ${red('not found - branch was deleted remotely')}`);
   } else {
     console.log(`  ${dim('Remote')}   : ${green('exists')} - ${coexistence.unmergedCommits} unmerged commit(s)`);
