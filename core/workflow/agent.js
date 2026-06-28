@@ -1163,6 +1163,8 @@ const main = async () => {
       separator();
       console.log(`\n  ${bold('Abandoning...')}\n`);
       const { branch } = activeSlot;
+      const abandonPath = path.isAbsolute(activeSlot.worktreePath) ? activeSlot.worktreePath : path.resolve(ROOT, activeSlot.worktreePath);
+      try { execSync(`git worktree remove "${abandonPath}" --force`, { cwd: ROOT, stdio: 'pipe' }); console.log(`  ${green('✓')} Worktree removed`); } catch {}
       try { execSync(`git branch -D ${branch}`, { cwd: ROOT, stdio: 'pipe' }); console.log(`  ${green('✓')} Local branch deleted`); } catch {}
       try { execSync(`git push origin --delete ${branch}`, { cwd: ROOT, stdio: 'pipe' }); console.log(`  ${green('✓')} Remote branch deleted`); } catch {}
       guards.clearTrackingSlot(tracking, project, agent, ROOT);
