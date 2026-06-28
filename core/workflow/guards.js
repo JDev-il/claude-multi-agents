@@ -476,6 +476,17 @@ const runMissingGate = async (params) => {
     separator();
     console.log(`\n${bold('Resetting...')}\n`);
 
+    // Remove worktree folder if it exists
+    if (slot.worktreePath) {
+      const absoluteWorktreePath = path.isAbsolute(slot.worktreePath) ? slot.worktreePath : path.resolve(ROOT, slot.worktreePath);
+      try {
+        execSync(`git worktree remove "${absoluteWorktreePath}" --force`, { cwd: ROOT, stdio: 'pipe' });
+        console.log(`  ${green('✓')} Worktree removed`);
+      } catch {
+        console.log(`  ${dim('!')} Worktree folder not found - skipping`);
+      }
+    }
+
     // Delete local branch
     try {
       execSync(`git branch -D ${branch}`, { cwd: ROOT, stdio: 'pipe' });
