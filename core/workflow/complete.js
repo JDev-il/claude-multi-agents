@@ -55,7 +55,16 @@ const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
 
 const arrowConfirm = async (message, initial = true) => {
   if (prompts && process.stdin.isTTY) {
-    const res = await prompts({ type: 'confirm', name: 'value', message, initial }, { onCancel: () => process.exit(0) });
+    const res = await prompts({
+      type:    'select',
+      name:    'value',
+      message,
+      choices: [
+        { title: 'Yes', value: true },
+        { title: 'No',  value: false },
+      ],
+      initial: initial ? 0 : 1,
+    }, { onCancel: () => process.exit(0) });
     return res.value ?? initial;
   }
   return initial;

@@ -41,19 +41,21 @@ const arrowSelect = async (message, choices, rl) => {
   });
 };
 
-const arrowConfirm = async (message, rl) => {
+const arrowConfirm = async (message, rl, initial = true) => {
   if (prompts && process.stdin.isTTY) {
     const res = await prompts({
-      type:    'confirm',
+      type:    'select',
       name:    'value',
       message,
-      initial: true,
+      choices: [
+        { title: 'Yes', value: true },
+        { title: 'No',  value: false },
+      ],
+      initial: initial ? 0 : 1,
     }, { onCancel: () => process.exit(0) });
-    return res.value ?? true;
+    return res.value ?? initial;
   }
-  return new Promise(resolve => {
-    rl.question(`${message} (y/n): `, ans => resolve(ans.toLowerCase() !== 'n'));
-  });
+  return initial;
 };
 
 // ── Colors ────────────────────────────────────────────────────────────────────
