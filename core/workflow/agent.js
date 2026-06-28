@@ -1185,8 +1185,7 @@ const main = async () => {
       const ctxRes = await prompts({
         type:    'text',
         name:    'value',
-        message: '* What are you building?',
-        hint: '(e.g. A stock market prediction app with AI insights)',
+        message: '* What are you building? (e.g. A stock market prediction app with AI insights)',
       }, { onCancel: () => process.exit(0) });
       const rawCtx = (ctxRes.value || '').trim();
       projectContext = rawCtx;
@@ -1207,9 +1206,8 @@ const main = async () => {
     const res = await prompts({
       type:    'text',
       name:    'value',
-      message: `* Task description (${agent} agent)`,
+      message: `* Task description (${agent} agent) — ${defaultTask ? 'Enter to use default, or type your own' : 'describe what this agent should build or fix'}`,
       initial: defaultTask || '',
-      hint: defaultTask ? '(Enter to use default, or type your own)' : '(describe what this agent should build or fix)',
     }, { onCancel: () => process.exit(0) });
 
     if (res.value === undefined) continue flowLoop; // Esc = back
