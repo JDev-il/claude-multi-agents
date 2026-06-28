@@ -1610,9 +1610,9 @@ Mark each step complete. Only proceed to the task below when all are checked.
   // ── Generate IDE settings ─────────────────────────────────────────────────────
 
   const excludedFolders = {
-    'client':  ['backend/', 'worktrees/', '.scaffold/', '.workflow/'],
-    'backend': ['client/', 'worktrees/', '.scaffold/', '.workflow/'],
-    'shared':  ['client/', 'backend/', 'worktrees/', '.scaffold/', '.workflow/'],
+    'client':  ['backend/', 'shared/', 'worktrees/', '.scaffold/', '.workflow/', 'CLAUDE.md', 'BUILD_STATE.md', 'CLOUD_STATE.md', 'CONTRACTS.md', 'TASKS_HISTORY.md', 'package-lock.json'],
+    'backend': ['client/', 'shared/', 'worktrees/', '.scaffold/', '.workflow/', 'CLAUDE.md', 'BUILD_STATE.md', 'CLOUD_STATE.md', 'CONTRACTS.md', 'TASKS_HISTORY.md', 'package-lock.json'],
+    'shared':  ['client/', 'backend/', 'worktrees/', '.scaffold/', '.workflow/', 'CLAUDE.md', 'BUILD_STATE.md', 'CLOUD_STATE.md', 'CONTRACTS.md', 'TASKS_HISTORY.md', 'package-lock.json'],
   };
   const foldersToHide = excludedFolders[project] || [];
 
