@@ -15,3 +15,11 @@ node_modules/
 !core/templates/shared/
 !core/templates/shared/**
 !core/templates/CLAUDE.md
+!core/templates/client/
+!core/templates/client/**
+!core/templates/backend/
+!core/templates/backend/**
+!core/templates/.agents/
+!core/templates/.agents/**
+!core/templates/.frameworks/
+!core/templates/.frameworks/**
