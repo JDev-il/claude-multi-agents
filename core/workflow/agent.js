@@ -1610,9 +1610,9 @@ Mark each step complete. Only proceed to the task below when all are checked.
   // ── Generate IDE settings ─────────────────────────────────────────────────────
 
   const excludedFolders = {
-    'client':  ['backend/', 'shared/', 'worktrees/', '.scaffold/', '.workflow/', 'CLAUDE.md', 'BUILD_STATE.md', 'CLOUD_STATE.md', 'CONTRACTS.md', 'TASKS_HISTORY.md', 'package-lock.json'],
-    'backend': ['client/', 'shared/', 'worktrees/', '.scaffold/', '.workflow/', 'CLAUDE.md', 'BUILD_STATE.md', 'CLOUD_STATE.md', 'CONTRACTS.md', 'TASKS_HISTORY.md', 'package-lock.json'],
-    'shared':  ['client/', 'backend/', 'worktrees/', '.scaffold/', '.workflow/', 'CLAUDE.md', 'BUILD_STATE.md', 'CLOUD_STATE.md', 'CONTRACTS.md', 'TASKS_HISTORY.md', 'package-lock.json'],
+    'client':  ['backend/', 'shared/', 'client/', 'worktrees/', '.scaffold/', '.workflow/', 'CLAUDE.md', 'BUILD_STATE.md', 'CLOUD_STATE.md', 'CONTRACTS.md', 'TASKS_HISTORY.md', 'package-lock.json'],
+    'backend': ['client/', 'shared/', 'backend/', 'worktrees/', '.scaffold/', '.workflow/', 'CLAUDE.md', 'BUILD_STATE.md', 'CLOUD_STATE.md', 'CONTRACTS.md', 'TASKS_HISTORY.md', 'package-lock.json'],
+    'shared':  ['client/', 'backend/', 'shared/', 'worktrees/', '.scaffold/', '.workflow/', 'CLAUDE.md', 'BUILD_STATE.md', 'CLOUD_STATE.md', 'CONTRACTS.md', 'TASKS_HISTORY.md', 'package-lock.json'],
   };
   const foldersToHide = excludedFolders[project] || [];
 
@@ -1631,6 +1631,7 @@ Mark each step complete. Only proceed to the task below when all are checked.
       '.claude-scope':    true,
       'scope.json':       true,
       'package.json':     true,
+      '.vscode/':         true,
     },
     'search.exclude': {
       '**/node_modules': true,
