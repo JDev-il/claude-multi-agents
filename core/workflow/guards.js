@@ -113,7 +113,11 @@ const updateTrackingSlot = (tracking, scope, agent, data, ROOT) => {
   if (!tracking[scope]) tracking[scope] = {};
   if (!tracking[scope][agent]) tracking[scope][agent] = emptySlot();
 
-  tracking[scope][agent] = { ...tracking[scope][agent], ...data };
+  const normalizedData = { ...data };
+  if (normalizedData.worktreePath && path.isAbsolute(normalizedData.worktreePath)) {
+    normalizedData.worktreePath = path.relative(ROOT, normalizedData.worktreePath);
+  }
+  tracking[scope][agent] = { ...tracking[scope][agent], ...normalizedData };
 
   const trackingPath = path.join(ROOT, '.scaffold', '.tracking.json');
   fs.writeFileSync(trackingPath, JSON.stringify(tracking, null, 2), 'utf8');
@@ -458,7 +462,10 @@ const runMissingGate = async (params) => {
       worktreePath,
     }, ROOT);
 
-    return { action: 'recovered', worktreePath };
+    const resolvedWorktreePath = path.isAbsolute(worktreePath)
+      ? worktreePath
+      : path.resolve(ROOT, worktreePath);
+    return { action: 'recovered', worktreePath: resolvedWorktreePath };
   }
 
   // ── Handle: Reset ──────────────────────────────────────────────────────────

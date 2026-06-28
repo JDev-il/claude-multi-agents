@@ -1119,7 +1119,8 @@ const main = async () => {
   if (active) {
     // Read task from TASK.md if available
     let activeTask = activeSlot.branch;
-    const activeTm = path.join(activeSlot.worktreePath, 'TASK.md');
+    const activeWorktreePath = path.isAbsolute(activeSlot.worktreePath) ? activeSlot.worktreePath : path.resolve(ROOT, activeSlot.worktreePath);
+    const activeTm = path.join(activeWorktreePath, 'TASK.md');
     if (fs.existsSync(activeTm)) {
       const tmContent = fs.readFileSync(activeTm, 'utf8');
       const taskMatch = tmContent.match(/## Task\n.*Task:\s*(.+)/);
@@ -1143,9 +1144,9 @@ const main = async () => {
     if (activeChoice === 1) {
       separator();
       console.log(`\n  ${green('✓')} Opening existing workspace...\n`);
-      openIDE(activeSlot.worktreePath);
+      openIDE(activeWorktreePath);
       console.log(`  ${bold('Resume your task:')}`);
-      console.log(`  ${dim('1.')} IDE should be open at: ${cyan(activeSlot.worktreePath)}`);
+      console.log(`  ${dim('1.')} IDE should be open at: ${cyan(activeWorktreePath)}`);
       console.log(`  ${dim('2.')} Open a NEW session in Claude Code CLI or Claude Code Extension - type go or start to resume`);
       console.log(`  ${dim('3.')} Type: ${cyan('Read TASK.md and continue from where you stopped.')}\n`);
       separator(); rl.close(); return;
@@ -1185,7 +1186,8 @@ const main = async () => {
     });
 
     if (gateResult.action === 'recovered') {
-      openIDE(gateResult.worktreePath);
+      const gateWorktreePath = path.isAbsolute(gateResult.worktreePath) ? gateResult.worktreePath : path.resolve(ROOT, gateResult.worktreePath);
+      openIDE(gateWorktreePath);
       rl.close();
       return;
     }
