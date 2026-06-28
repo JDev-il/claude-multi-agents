@@ -123,6 +123,96 @@ if (!config.ide) {
   process.exit(1);
 }
 
+// ── Claude Code CLI gate ─────────────────────────────────────────────────────
+
+const checkClaudeAuth = () => {
+  try { execSync('claude --version', { stdio: 'pipe' }); return true; } catch { return false; }
+};
+
+const installClaudeCode = () => {
+  const frames = ['⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏'];
+  let i = 0;
+  const spin = setInterval(() => process.stdout.write(`\r  ${frames[i++ % frames.length]} Installing Claude Code CLI...`), 60);
+  try {
+    execSync('npm install -g @anthropic-ai/claude-code', { stdio: 'pipe' });
+    clearInterval(spin);
+    process.stdout.write('\r' + ' '.repeat(40) + '\r');
+    console.log(`  ${green('✓')} Claude Code CLI installed\n`);
+    return true;
+  } catch {
+    clearInterval(spin);
+    process.stdout.write('\r' + ' '.repeat(40) + '\r');
+    console.log(`  ${red('✖')} Installation failed - try manually: ${cyan('npm install -g @anthropic-ai/claude-code')}\n`);
+    return false;
+  }
+};
+
+const runClaudeLogin = () => {
+  const { spawnSync } = require('child_process');
+  console.log(`\n  ${dim('Running claude login...')}\n`);
+  const result = spawnSync('claude', ['login'], { stdio: 'inherit' });
+  return result.status === 0;
+};
+
+let claudeInstalled = false;
+try { execSync('which claude', { stdio: 'pipe' }); claudeInstalled = true; } catch {}
+
+await (async () => {
+if (!claudeInstalled) {
+  console.log(`\n${red('  ✖ Claude Code CLI not found.')}\n`);
+  const installIdx = await prompts({
+    type:    'select',
+    name:    'value',
+    message: 'How would you like to proceed?',
+    choices: [
+      { title: `${green('→')} I have an account - install Claude Code for me`, value: 0 },
+      { title: `${dim('→')} I don\'t have an account yet - show me how to get started`, value: 1 },
+      { title: `${dim('←')} Exit`, value: 2 },
+    ],
+  }, { onCancel: () => process.exit(0) });
+
+  if (installIdx.value === 2 || installIdx.value === undefined) process.exit(0);
+
+  if (installIdx.value === 1) {
+    console.log(`\n  ${bold('To get started with Claude Code:')}\n`);
+    console.log(`  ${bold('1.')} Create a free account at ${cyan('https://claude.ai/signup')}`);
+    console.log(`  ${bold('2.')} Install Claude Code: ${cyan('npm install -g @anthropic-ai/claude-code')}`);
+    console.log(`  ${bold('3.')} Authenticate: ${cyan('claude login')}`);
+    console.log(`  ${bold('4.')} Re-run: ${cyan('npm run agent')}\n`);
+    const { execSync: _open } = require('child_process');
+    try { _open('open https://claude.ai/signup', { stdio: 'pipe' }); } catch {}
+    process.exit(0);
+  }
+
+  const installed = installClaudeCode();
+  if (!installed) process.exit(1);
+}
+
+// Auth check
+let claudeAuthed = false;
+try { execSync('claude --version', { stdio: 'pipe' }); claudeAuthed = true; } catch {}
+
+if (!claudeAuthed) {
+  console.log(`\n${red('  ✖ Claude Code not authenticated.')}\n`);
+  const authIdx = await prompts({
+    type:    'select',
+    name:    'value',
+    message: 'How would you like to proceed?',
+    choices: [
+      { title: `${green('→')} Run claude login now`, value: 0 },
+      { title: `${dim('←')} Exit`, value: 1 },
+    ],
+  }, { onCancel: () => process.exit(0) });
+
+  if (authIdx.value === 1 || authIdx.value === undefined) process.exit(0);
+  const loggedIn = runClaudeLogin();
+  if (!loggedIn) {
+    console.log(`\n  ${red('✖')} Login failed - re-run ${cyan('npm run agent')} after authenticating\n`);
+    process.exit(1);
+  }
+}
+})();
+
 // ── Open IDE ──────────────────────────────────────────────────────────────────
 
 const openIDE = (worktreePath) => {
