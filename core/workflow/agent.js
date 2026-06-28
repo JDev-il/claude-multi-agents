@@ -1621,16 +1621,21 @@ Mark each step complete. Only proceed to the task below when all are checked.
   const vscodeSettings = {
     'files.exclude': {
       ...Object.fromEntries(foldersToHide.map(f => [f, true])),
-      '.idea/':          true,
-      '.zed/':           true,
-      '.agents/':        true,
-      '.frameworks/':    true,
-      '**/node_modules': true,
+      '.idea/':           true,
+      '.zed/':            true,
+      '.agents/':         true,
+      '.frameworks/':     true,
+      '**/node_modules':  true,
+      '.git':             true,
+      '.gitignore':       true,
+      '.claude-scope':    true,
+      'scope.json':       true,
+      'package.json':     true,
     },
     'search.exclude': {
       '**/node_modules': true,
     },
-    'explorer.excludeGitIgnore': true,
+    'explorer.excludeGitIgnore': false,
   };
   fs.writeFileSync(
     path.join(vscodeDir, 'settings.json'),
@@ -1643,7 +1648,7 @@ Mark each step complete. Only proceed to the task below when all are checked.
 
   const ideaDir = path.join(worktreePath, '.idea');
   fs.mkdirSync(ideaDir, { recursive: true });
-  const allExcluded = [...foldersToHide, '.agents/', '.frameworks/', 'node_modules/'];
+  const allExcluded = [...foldersToHide, '.agents/', '.frameworks/', 'node_modules/', '.git/', '.claude-scope', 'scope.json', 'package.json', '.gitignore'];
   const excludedUrls = allExcluded
     .map(f => `    <excludeFolder url="file://$MODULE_DIR$/${f.replace(/\/$/, '')}" />`)
     .join('\n');
@@ -1676,9 +1681,14 @@ ${excludedUrls}
     'file_scan_exclusions': [
       '**/.git',
       '**/.idea',
+      '**/.zed',
       '**/.agents',
       '**/.frameworks',
       '**/node_modules',
+      '**/.gitignore',
+      '**/.claude-scope',
+      '**/scope.json',
+      '**/package.json',
       ...foldersToHide.map(f => `**/${f.replace(/\/$/, '')}`),
     ],
   };
