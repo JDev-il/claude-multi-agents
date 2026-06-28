@@ -1184,11 +1184,10 @@ const main = async () => {
         type:    'text',
         name:    'value',
         message: '* What are you building?',
-        initial: 'e.g. A stock market prediction app with AI insights and portfolio tracking',
+        hint: '(e.g. A stock market prediction app with AI insights)',
       }, { onCancel: () => process.exit(0) });
       const rawCtx = (ctxRes.value || '').trim();
-      const isPlaceholderCtx = rawCtx.startsWith('e.g. ');
-      projectContext = isPlaceholderCtx ? '' : rawCtx;
+      projectContext = rawCtx;
     } else {
       console.log(dim('  (optional — helps the agent make better decisions)'));
       const input = await ask(`\n${bold('* What are you building?')}: `);
@@ -1207,12 +1206,13 @@ const main = async () => {
       type:    'text',
       name:    'value',
       message: `* Task description (${agent} agent)`,
-      initial: defaultTask ? `e.g. ${defaultTask}` : '',
+      initial: defaultTask || '',
+      hint: defaultTask ? '(Enter to use default, or type your own)' : '(describe what this agent should build or fix)',
     }, { onCancel: () => process.exit(0) });
 
     if (res.value === undefined) continue flowLoop; // Esc = back
     const rawValue = (res.value || '').trim();
-    const isPlaceholder = rawValue.startsWith('e.g. ') && rawValue === `e.g. ${defaultTask}`;
+    const isPlaceholder = rawValue === defaultTask || rawValue === '';
     task = isPlaceholder ? defaultTask : (rawValue || defaultTask);
     if (!task) task = defaultTask;
   } else {
@@ -1721,6 +1721,19 @@ ${excludedUrls}
   ], rl);
 
   if (sessionIdx === 0) {
+    separator();
+    console.log(`\n  ${bold('What happens next:')}
+`);
+    console.log(`  ${dim('→')} ${bold(config.ide.name || 'Your IDE')} will open at your agent workspace`);
+    console.log(`  ${dim('→')} A new terminal window will open with Claude Code\n`);
+    console.log(`  ${bold('Once open:')}
+`);
+    console.log(`  ${bold('1.')} Approve the workspace trust prompt in Claude Code`);
+    console.log(`  ${bold('2.')} Type anything to start ${dim("(e.g. 'go', 'start', 'begin')")}`);
+    console.log(`  ${bold('3.')} Let the agent run autonomously — don't interrupt mid-task`);
+    console.log(`  ${bold('4.')} When done, run: ${cyan('npm run complete')}\n`);
+    const goIdx = await arrowSelect('Ready?', [{ label: `${green('✓')} Open workspace` }, { label: `${dim('←')} Back` }], rl);
+    if (goIdx === 1) { continue sessionLoop; }
     const openedIDE = openIDE(worktreePath);
     if (openedIDE) console.log(`  ${green('✓')} ${openedIDE} opened`);
     else console.log(`  ${yellow('!')} Could not open IDE - open manually at: ${dim(worktreePath)}`);
@@ -1732,15 +1745,38 @@ ${excludedUrls}
     process.exit(0);
 
   } else if (sessionIdx === 1) {
+    separator();
+    console.log(`\n  ${bold('What happens next:')}
+`);
+    console.log(`  ${dim('→')} ${bold(config.ide.name || 'Your IDE')} will open at your agent workspace\n`);
+    console.log(`  ${bold('Once open:')}
+`);
+    console.log(`  ${bold('1.')} Open a new Claude Code session inside the IDE`);
+    console.log(`  ${bold('2.')} Approve the workspace trust prompt`);
+    console.log(`  ${bold('3.')} Type anything to start ${dim("(e.g. 'go', 'start', 'begin')")}`);
+    console.log(`  ${bold('4.')} Let the agent run autonomously — don't interrupt mid-task`);
+    console.log(`  ${bold('5.')} When done, run: ${cyan('npm run complete')}\n`);
+    const goIdx = await arrowSelect('Ready?', [{ label: `${green('✓')} Open workspace` }, { label: `${dim('←')} Back` }], rl);
+    if (goIdx === 1) { continue sessionLoop; }
     const openedIDE = openIDE(worktreePath);
     if (openedIDE) console.log(`  ${green("✓")} ${openedIDE} opened`);
     else console.log(`  ${yellow("!")} Could not open IDE - open manually at: ${dim(worktreePath)}`);
-    console.log(`\n  ${dim('Open a NEW Claude Code session and type')} ${cyan('go')} ${dim('to start.')}\n`);
-    console.log(`  ${dim('When done, run:')} ${cyan('npm run complete')}\n`);
     rl.close();
     process.exit(0);
 
   } else if (sessionIdx === 2) {
+    separator();
+    console.log(`\n  ${bold('What happens next:')}
+`);
+    console.log(`  ${dim('→')} A new terminal window will open with Claude Code\n`);
+    console.log(`  ${bold('Once open:')}
+`);
+    console.log(`  ${bold('1.')} Approve the workspace trust prompt in Claude Code`);
+    console.log(`  ${bold('2.')} Type anything to start ${dim("(e.g. 'go', 'start', 'begin')")}`);
+    console.log(`  ${bold('3.')} Let the agent run autonomously — don't interrupt mid-task`);
+    console.log(`  ${bold('4.')} When done, run: ${cyan('npm run complete')}\n`);
+    const goIdx = await arrowSelect('Ready?', [{ label: `${green('✓')} Open workspace` }, { label: `${dim('←')} Back` }], rl);
+    if (goIdx === 1) { continue sessionLoop; }
     const termOpened = openTerminal(worktreePath, skipPermissions);
     if (termOpened) console.log(`  ${green('✓')} New terminal opened with Claude Code CLI`);
     console.log(`\n  ${dim("This window can be closed.")}`);
