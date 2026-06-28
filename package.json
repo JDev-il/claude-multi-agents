@@ -29,10 +29,5 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/JDev-il/multi-agents.git"
-  },
-  "homepage": "https://github.com/JDev-il/multi-agents#readme",
   "scripts": {}
 }
