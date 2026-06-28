@@ -9,7 +9,7 @@
  * Run from the repo root after a task is complete.
  */
 
-const readline          = require('readline');
+let prompts; try { prompts = require('prompts'); } catch { prompts = null; }
 const fs                = require('fs');
 const path              = require('path');
 const { execSync, spawn } = require('child_process');
@@ -51,15 +51,23 @@ if (!fs.existsSync(LOCK_PATH)) {
 
 const config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
 
-// ── Readline ──────────────────────────────────────────────────────────────────
+// ── Arrow confirm helper ──────────────────────────────────────────────────────
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
+const arrowConfirm = async (message, initial = true) => {
+  if (prompts && process.stdin.isTTY) {
+    const res = await prompts({ type: 'confirm', name: 'value', message, initial }, { onCancel: () => process.exit(0) });
+    return res.value ?? initial;
+  }
+  return initial;
+};
 
-const ask = (question) =>
-  new Promise((resolve) => rl.question(question, (a) => resolve(a.trim())));
+const arrowSelect = async (message, choices) => {
+  if (prompts && process.stdin.isTTY) {
+    const res = await prompts({ type: 'select', name: 'value', message, choices: choices.map((c, i) => ({ title: c, value: i })) }, { onCancel: () => process.exit(0) });
+    return res.value ?? 0;
+  }
+  return 0;
+};
 
 const separator = () => console.log(`\n${dim('─'.repeat(60))}`);
 
@@ -143,7 +151,6 @@ const main = async () => {
   if (worktrees.length === 0) {
     console.log(`\n${yellow('  No active task worktrees found.')}`);
     console.log(dim('  Run npm run agent to start a task.\n'));
-    rl.close();
     return;
   }
 
@@ -163,15 +170,8 @@ const main = async () => {
     selectedWorktree = worktrees[0];
     console.log(dim(`\n  Auto-selected: ${selectedWorktree.branch}\n`));
   } else {
-    while (!selectedWorktree) {
-      const input = await ask(`\n  ${bold('Select task to complete')} ${dim(`(1-${worktrees.length})`)}: `);
-      const index = parseInt(input) - 1;
-      if (!isNaN(index) && index >= 0 && index < worktrees.length) {
-        selectedWorktree = worktrees[index];
-      } else {
-        console.log(yellow(`  Please enter a number between 1 and ${worktrees.length}.`));
-      }
-    }
+    const idx = await arrowSelect('Select task to complete:', worktrees.map(wt => wt.branch));
+    selectedWorktree = worktrees[idx];
   }
 
   const { path: worktreePath, branch: branchName } = selectedWorktree;
@@ -219,7 +219,6 @@ const main = async () => {
       console.log(dim('  The following files are outside the allowed scope for ' + scopeMeta.agent + ' (' + scopeMeta.scope + '):\n'));
       violations.forEach(f => console.log('    ' + red('✗') + ' ' + f));
       console.log('\n' + dim('  Fix the violations, then re-run npm run complete.\n'));
-      rl.close();
       return;
     }
 
@@ -238,10 +237,9 @@ const main = async () => {
     if (!isCompleted && !isNonTTY) {
       console.log(`\n${yellow('  TASK.md is not marked as COMPLETED.')}`);
       console.log(dim('  The agent may still be working on this task.\n'));
-      const proceed = await ask(`  ${bold('Proceed with merge anyway?')} ${dim('(y/n)')}: `);
-      if (proceed.toLowerCase() !== 'y') {
+      const proceed = await arrowConfirm('Proceed with merge anyway?', false);
+      if (!proceed) {
         console.log(yellow('\n  Aborted. Complete the task first.\n'));
-        rl.close();
         return;
       }
     } else if (!isCompleted && isNonTTY) {
@@ -258,10 +256,9 @@ const main = async () => {
   console.log(`  ${dim('Into')}     : ${green('main')}`);
   console.log(`  ${dim('Worktree')} : ${dim(worktreePath)}\n`);
 
-  const confirm = isNonTTY ? 'y' : await ask(`${bold('Confirm merge into main?')} ${dim('(y/n)')}: `);
-  if (confirm.toLowerCase() !== 'y') {
+  const confirmMerge = isNonTTY ? true : await arrowConfirm('Confirm merge into main?');
+  if (!confirmMerge) {
     console.log(yellow('\n  Aborted.\n'));
-    rl.close();
     return;
   }
 
@@ -328,10 +325,9 @@ const main = async () => {
   } catch (err) {
     console.log(`  ${yellow('!')} Could not pull latest main.`);
     if (!isNonTTY) {
-      const proceedAnyway = await ask(`  ${bold('Proceed with merge anyway?')} ${dim('(y/n)')}: `);
-      if (proceedAnyway.toLowerCase() !== 'y') {
+      const proceedAnyway = await arrowConfirm('Proceed with merge anyway?');
+      if (!proceedAnyway) {
         console.log(yellow('\n  Aborted.\n'));
-        rl.close();
         return;
       }
     } else {
@@ -362,12 +358,10 @@ const main = async () => {
       } else {
         console.log(`\n${red('  ✗ Merge conflict in:')} ${conflicts.join(', ')}`);
         console.log(dim('  Resolve conflicts manually, then run: git commit\n'));
-        rl.close();
         return;
       }
     } catch {
       console.log(`\n${red('  ✗ Merge failed.')} Resolve manually.\n`);
-      rl.close();
       return;
     }
   }
@@ -560,22 +554,13 @@ const main = async () => {
       console.log(`  client/LOGIC is merged. This is the ideal moment to launch backend/INIT.\n`);
 
       const { spawn: _spawn } = require('child_process');
-      const launchIdx = await new Promise(resolve => {
-        rl2 = readline.createInterface({ input: process.stdin, output: process.stdout });
-        const choices = [
-          '1. Launch backend/INIT now  ← recommended',
-          '2. Skip — I will handle it manually',
-        ];
-        choices.forEach(c => console.log(`  ${c}`));
-        rl2.question('\n  Select (1-2): ', ans => {
-          rl2.close();
-          resolve(parseInt(ans));
-        });
-      });
+      const launchIdx = await arrowSelect('Launch backend/INIT?', [
+        'Launch backend/INIT now  ← recommended',
+        'Skip — I will handle it manually',
+      ]);
 
       if (launchIdx === 1) {
         console.log(`\n  ${green('✓')} Launching backend/INIT...\n`);
-        rl.close();
         _spawn('node', [path.join(ROOT, '.workflow', 'agent.js'), '--scope=backend', '--agent=INIT'], {
           cwd: ROOT, stdio: 'inherit',
         });
@@ -583,8 +568,6 @@ const main = async () => {
       }
     }
   } catch { /* best-effort */ }
-
-  rl.close();
 };
 
 main().catch((err) => {
