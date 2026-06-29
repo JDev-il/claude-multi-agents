@@ -574,6 +574,11 @@ const main = async () => {
           cwd: ROOT, stdio: 'inherit',
         });
         return;
+      } else {
+        // User skipped - mark so prompt doesn't repeat
+        guards.updateTrackingSlot(_tracking, 'backend', 'INIT', {
+          backendLaunchTiming: 'skipped',
+        }, ROOT);
       }
     }
   } catch { /* best-effort */ }
