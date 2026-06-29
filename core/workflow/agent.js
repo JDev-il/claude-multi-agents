@@ -1334,6 +1334,34 @@ const main = async () => {
         const beGitignore = ['# Framework files — never commit these to the agent branch', 'package.json', '.claude-scope', 'scope.json', 'TASK.md', '.vscode/', '.idea/', '.zed/', 'node_modules/'].join('\n') + '\n';
         fs.writeFileSync(path.join(beWorktreePath, '.gitignore'), beGitignore, 'utf8');
 
+        // IDE settings for backend/INIT worktree
+        const beFoldersToHide = ['client/', 'shared/', 'worktrees/', '.scaffold/', '.workflow/', 'CLAUDE.md', 'BUILD_STATE.md', 'CLOUD_STATE.md', 'CONTRACTS.md', 'TASKS_HISTORY.md', 'package-lock.json'];
+        const beVscodeDir = path.join(beWorktreePath, '.vscode');
+        fs.mkdirSync(beVscodeDir, { recursive: true });
+        fs.writeFileSync(path.join(beVscodeDir, 'settings.json'), JSON.stringify({
+          'files.exclude': {
+            ...Object.fromEntries(beFoldersToHide.map(f => [f, true])),
+            '.idea/': true, '.zed/': true, '.agents/': true, '.frameworks/': true,
+            '**/node_modules': true, '.git': true, '.gitignore': true,
+            '.claude-scope': true, 'scope.json': true, 'package.json': true, '.vscode/': true,
+          },
+          'search.exclude': { '**/node_modules': true },
+          'explorer.excludeGitIgnore': false,
+        }, null, 2), 'utf8');
+
+        const beIdeaDir = path.join(beWorktreePath, '.idea');
+        fs.mkdirSync(beIdeaDir, { recursive: true });
+        const beAllExcluded = [...beFoldersToHide, '.agents/', '.frameworks/', 'node_modules/', '.git/', '.claude-scope', 'scope.json', 'package.json', '.gitignore'];
+        const beExcludedUrls = beAllExcluded.map(f => '    <excludeFolder url="file://$MODULE_DIR$/' + f.replace(/\/$/, '') + '" />').join('\n');
+        fs.writeFileSync(path.join(beIdeaDir, 'module.iml'), '<?xml version="1.0" encoding="UTF-8"?>\n<module type="WEB_MODULE" version="4">\n  <component name="NewModuleRootManager">\n    <content url="file://$MODULE_DIR$">\n' + beExcludedUrls + '\n    </content>\n    <orderEntry type="inheritedJdk" />\n    <orderEntry type="sourceFolder" forTests="false" />\n  </component>\n</module>', 'utf8');
+        fs.writeFileSync(path.join(beIdeaDir, 'modules.xml'), '<?xml version="1.0" encoding="UTF-8"?>\n<project version="4">\n  <component name="ProjectModuleManager">\n    <modules>\n      <module fileurl="file://$PROJECT_DIR$/.idea/module.iml" filepath="$PROJECT_DIR$/.idea/module.iml" />\n    </modules>\n  </component>\n</project>', 'utf8');
+
+        const beZedDir = path.join(beWorktreePath, '.zed');
+        fs.mkdirSync(beZedDir, { recursive: true });
+        const beZedExclusions = ['**/.git', '**/.idea', '**/.zed', '**/.agents', '**/.frameworks', '**/node_modules', '**/.gitignore'].concat(beFoldersToHide.map(f => '**/' + f.replace(/\/$/, '')));
+        fs.writeFileSync(path.join(beZedDir, 'settings.json'), JSON.stringify({ 'file_scan_exclusions': beZedExclusions }, null, 2), 'utf8');
+        console.log(green('✓') + ' IDE settings generated for backend/INIT worktree');
+
         // Tracking
         guards.updateTrackingSlot(tracking, 'backend', 'INIT', {
           branch:      beBranchName,
