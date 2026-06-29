@@ -14,7 +14,7 @@ const path         = require('path');
 const { execSync } = require('child_process');
 const guards       = require('./guards');
 const tasksHistory = require('./tasks_history');
-const { AGENTS, AGENT_DESCRIPTIONS, AGENT_TASK_SUFFIX, SCAFFOLD_REQUIRED, CONTRACTS_REQUIRED, AGENT_PREREQUISITES, DOD_ITEMS, AGENT_QUESTIONS } = require('../../lib/agent-config');
+const { AGENTS, AGENT_DESCRIPTIONS, AGENT_TASK_SUFFIX, SCAFFOLD_REQUIRED, CONTRACTS_REQUIRED, AGENT_PREREQUISITES, DOD_ITEMS, AGENT_QUESTIONS } = require('./agent-config');
 
 // ── Prompts (arrow-key navigation) ───────────────────────────────────────────
 

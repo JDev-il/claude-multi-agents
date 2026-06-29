@@ -52,6 +52,8 @@ const copyWorkflow = (cliRoot) => {
   for (const file of fs.readdirSync(src)) {
     fs.copyFileSync(path.join(src, file), path.join(dest, file));
   }
+  const agentConfigSrc = path.join(cliRoot, 'lib', 'agent-config.js');
+  if (fs.existsSync(agentConfigSrc)) fs.copyFileSync(agentConfigSrc, path.join(dest, 'agent-config.js'));
   return true;
 };
 

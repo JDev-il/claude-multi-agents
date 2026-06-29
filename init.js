@@ -416,6 +416,8 @@ const main = async () => {
   const WORKFLOW_DEST = path.join(ROOT, '.workflow');
   fs.mkdirSync(WORKFLOW_DEST, { recursive: true });
   copyDir(WORKFLOW_SRC, WORKFLOW_DEST);
+  const agentConfigSrc = path.join(CORE_DIR, '..', 'lib', 'agent-config.js');
+  if (fs.existsSync(agentConfigSrc)) fs.copyFileSync(agentConfigSrc, path.join(WORKFLOW_DEST, 'agent-config.js'));
   console.log(`  ${green('✓')} Workflow scripts copied (.workflow/)`);
   try {
     const cliPkg = require('./package.json');
