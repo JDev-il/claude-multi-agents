@@ -1350,7 +1350,7 @@ Mark each step complete. Only proceed to the task below when all are checked.
         };
         fs.writeFileSync(path.join(beWorktreePath, 'package.json'), JSON.stringify(bePkg, null, 2), 'utf8');
 
-        const beGitignore = ['# Framework files — never commit these to the agent branch', 'package.json', '.claude-scope', 'scope.json', 'TASK.md', '.vscode/', '.idea/', '.zed/', 'node_modules/'].join('\n') + '\n';
+        const beGitignore = ['# Framework files — never commit these to the agent branch', '/package.json', '.claude-scope', 'scope.json', 'TASK.md', '.vscode/', '.idea/', '.zed/', 'node_modules/'].join('\n') + '\n';
         fs.writeFileSync(path.join(beWorktreePath, '.gitignore'), beGitignore, 'utf8');
 
         // IDE settings for backend/INIT worktree
@@ -1662,7 +1662,7 @@ ${excludedUrls}
   // ── Write worktree .gitignore — block framework files from agent commits ────
   const worktreeGitignore = [
     '# Framework files — never commit these to the agent branch',
-    'package.json',
+    '/package.json',
     '.claude-scope',
     'scope.json',
     'TASK.md',
