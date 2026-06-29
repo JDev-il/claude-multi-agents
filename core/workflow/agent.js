@@ -1725,7 +1725,7 @@ ${excludedUrls}
   const permIdx = await arrowSelect(
     'Grant agent full permissions for this session?',
     [
-      { label: `${green('→')} Yes — skip all permission prompts ${dim('(recommended for agent sessions)')}` },
+      { label: `${green('→')} Yes — skip all permission prompts ${dim('(recommended — some compound commands may still prompt)')}` },
       { label: `${dim('→')} No  — I'll approve each action manually` },
     ],
     rl
