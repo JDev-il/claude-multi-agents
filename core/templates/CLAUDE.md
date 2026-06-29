@@ -140,13 +140,18 @@ This section fires at the start of every new Claude Code session.
 Regardless of what the user types first - even a single word or greeting -
 the agent must:
 
-1. Read `BUILD_STATE.md` at the repo root - understand what has been built
-2. Check if `TASK.md` exists in the current directory
-3. If yes - read it and verify dependencies are met against BUILD_STATE.md
-4. If dependencies not met - surface what is missing and propose options
-5. If dependencies met - begin executing the task defined in TASK.md
-6. If no TASK.md - inform the user to run `npm run agent`
-7. Re-read `TASK.md` at every turn before acting - it is the single source of truth for the current task
+1. Resolve the project root (OS-agnostic, works on Mac/Linux/Windows):
+   ```bash
+   git rev-parse --show-toplevel
+   ```
+   Store this as PROJECT_ROOT. All subsequent paths (`.scaffold/`, `BUILD_STATE.md`, `CONTRACTS.md`, etc.) resolve from PROJECT_ROOT, never from the worktree directory.
+2. Read `BUILD_STATE.md` at PROJECT_ROOT - understand what has been built
+3. Check if `TASK.md` exists in the current directory
+4. If yes - read it and verify dependencies are met against BUILD_STATE.md
+5. If dependencies not met - surface what is missing and propose options
+6. If dependencies met - begin executing the task defined in TASK.md
+7. If no TASK.md - inform the user to run `npm run agent`
+8. Re-read `TASK.md` at every turn before acting - it is the single source of truth for the current task
 
 Do not wait for explicit instructions.
 The presence of `TASK.md` in the worktree is the instruction.
@@ -204,7 +209,7 @@ When executing a task from `TASK.md`, operate in fully autonomous mode:
 **These workflow files are ALWAYS updated without confirmation:**
 - `TASK.md` — mark `[x] COMPLETED` when your task is done
 - `CONTRACTS.md`
-- `.scaffold/.tracking.json`
+- `PROJECT_ROOT/.scaffold/.tracking.json`
 
 **NEVER update `BUILD_STATE.md` directly.**
 `complete.js` owns all BUILD_STATE.md updates after merge.
@@ -329,7 +334,7 @@ If verification fails:
 
 ## Tracking Protocol
 
-Every agent reads `.scaffold/.tracking.json` at session start.
+Every agent reads `PROJECT_ROOT/.scaffold/.tracking.json` at session start.
 This file records the current state of every agent slot.
 
 **Slot schema:**
@@ -356,7 +361,7 @@ This file records the current state of every agent slot.
 
 ## Paths Protocol
 
-`.scaffold/.paths.json` maps expected and actual framework paths for the project.
+`PROJECT_ROOT/.scaffold/.paths.json` maps expected and actual framework paths for the project.
 Written at init time with `status: pending`. Updated by agents after scaffolding.
 
 **Schema:**
@@ -385,7 +390,7 @@ Written at init time with `status: pending`. Updated by agents after scaffolding
 - `diverged` — actual path differs from expected (update `current` with real path)
 
 **Agent rules:**
-- After scaffolding your framework, read `.scaffold/.paths.json`
+- After scaffolding your framework, read `PROJECT_ROOT/.scaffold/.paths.json`
 - Verify each path in your scope exists on disk
 - Update `current` with the actual path and set `status: verified` or `diverged`
 - If `diverged` — use the `current` path going forward, not `expected`
@@ -397,8 +402,9 @@ Written at init time with `status: pending`. Updated by agents after scaffolding
 to a remote. The template origin is removed during init and moved to
 `upstream`. The project has no remote until one is configured.
 
-If `.scaffold/.remote-setup-needed` exists at session start, this MUST
-be resolved before any task work begins. The deployment chain
+If `PROJECT_ROOT/.scaffold/.remote-setup-needed` exists at session start, this MUST
+be resolved before any task work begins.
+(PROJECT_ROOT resolved in step 1 of Session Start — always use absolute path here.) The deployment chain
 (`npm run complete → git push origin main`) will fail without it.
 
 **Step 1 — Check if already configured:**
@@ -553,7 +559,7 @@ git ls-remote https://github.com/{username}/{projectName}
 **Step 5 — Cleanup on success:**
 ```bash
 git push -u origin main
-rm .scaffold/.remote-setup-needed
+rm "$PROJECT_ROOT/.scaffold/.remote-setup-needed"
 ```
 Log completion in TASK.md checklist.
 Confirm: "Remote configured — proceeding with task."
