@@ -1315,7 +1315,26 @@ const main = async () => {
         fs.writeFileSync(path.join(beWorktreePath, '.claude-scope'), beScope, 'utf8');
 
         const beTask = AGENT_DESCRIPTIONS.backend?.INIT || 'scaffolds backend architecture, folder structure, DB setup, wiring config and contracts';
-        const beTaskMd = generateTaskMd({ project: 'backend', agent: 'INIT', task: beTask, branchName: beBranchName, contextSection: '', remoteSetupSection: '' });
+        const beRemoteSetupNeeded = fs.existsSync(path.join(ROOT, '.scaffold', '.remote-setup-needed'));
+        const beRemoteSetupSection = beRemoteSetupNeeded ? `
+---
+
+## ⚠ Pre-Task: Remote Setup Required
+This project has no GitHub remote configured yet.
+Complete ALL steps below BEFORE starting task implementation.
+
+- [ ] Check: \`git remote get-url origin\`
+- [ ] Detect gh CLI: \`gh auth status\`
+- [ ] Configure remote (gh create or manual - see Root CLAUDE.md)
+- [ ] Validate: \`git ls-remote origin HEAD\`
+- [ ] Push: \`git push -u origin main\`
+- [ ] Delete \`.scaffold/.remote-setup-needed\`
+
+Mark each step complete. Only proceed to the task below when all are checked.
+
+---
+` : '';
+        const beTaskMd = generateTaskMd({ project: 'backend', agent: 'INIT', task: beTask, branchName: beBranchName, contextSection: '', remoteSetupSection: beRemoteSetupSection });
         fs.writeFileSync(path.join(beWorktreePath, 'TASK.md'), beTaskMd, 'utf8');
 
         const bePkg = {
