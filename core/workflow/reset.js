@@ -239,12 +239,12 @@ const main = async () => {
 
   separator();
   console.log(`${green(bold('  Project wiped successfully.'))}\n`);
-  console.log(`  Run to start fresh:\n`);
-  console.log(`  ${cyan('npm run init')}
-`);
+  console.log(`  Starting fresh initialization...\n`);
   separator();
 
-  process.exit(0);
+  const { spawn } = require('child_process');
+  const initProc = spawn('node', [path.join(ROOT, '.workflow', 'run.js')], { stdio: 'inherit', cwd: ROOT });
+  initProc.on('exit', (code) => process.exit(code || 0));
 };
 
 main().catch((err) => {
