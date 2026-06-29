@@ -568,7 +568,7 @@ const main = async () => {
         'Skip — I will handle it manually',
       ]);
 
-      if (launchIdx === 1) {
+      if (launchIdx === 0) {
         console.log(`\n  ${green('✓')} Launching backend/INIT...\n`);
         _spawn('node', [path.join(ROOT, '.workflow', 'agent.js'), '--scope=backend', '--agent=INIT'], {
           cwd: ROOT, stdio: 'inherit',
