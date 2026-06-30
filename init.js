@@ -77,11 +77,51 @@ const isReInit    = args[0] === 'init' && !args[1];
 const projectArg  = isGlobalCLI ? args[1] : null;
 
 if (isReInit) {
+  let inGitRepo = false;
   try {
     const gitCommonDir = execSync('git rev-parse --git-common-dir', { encoding: 'utf8', stdio: 'pipe' }).trim();
     const repoRoot = path.resolve(gitCommonDir, '..');
     process.chdir(repoRoot);
-  } catch { /* stay in current directory */ }
+    inGitRepo = true;
+  } catch { /* not yet a git repo - stay in current directory */ }
+
+  if (!inGitRepo) {
+    const targetDir = process.cwd();
+    let gitOk = false;
+    try {
+      execSync('git init -b main', { cwd: targetDir, stdio: 'pipe' });
+      execSync('git commit --allow-empty -m "init: project created"', { cwd: targetDir, stdio: 'pipe' });
+      gitOk = true;
+    } catch {
+      try {
+        execSync('git init', { cwd: targetDir, stdio: 'pipe' });
+        execSync('git checkout -b main', { cwd: targetDir, stdio: 'pipe' });
+        execSync('git commit --allow-empty -m "init: project created"', { cwd: targetDir, stdio: 'pipe' });
+        gitOk = true;
+      } catch { /* both attempts failed */ }
+    }
+
+    if (gitOk) {
+      try {
+        const commitCount = execSync('git rev-list --count HEAD', { cwd: targetDir, encoding: 'utf8', stdio: 'pipe' }).trim();
+        gitOk = parseInt(commitCount, 10) > 0;
+      } catch { gitOk = false; }
+    }
+
+    if (!gitOk) {
+      console.error(`
+  ✖ Could not create the initial git commit.
+
+  This is usually caused by missing git identity configuration. Run:
+
+    git config --global user.name "Your Name"
+    git config --global user.email "you@example.com"
+
+  Then re-run: npm run init
+`);
+      process.exit(1);
+    }
+  }
 }
 
 if (isGlobalCLI) {
@@ -691,13 +731,36 @@ Before starting any task, verify:
 
   // ── Auto-commit ───────────────────────────────────────────────────────────────
 
+  let configCommitOk = false;
   try {
     execSync('git add .', { cwd: ROOT, stdio: 'pipe' });
     execSync('git commit -m "init: project configuration"', { cwd: ROOT, stdio: 'pipe' });
     console.log(`  ${green('✓')} Project configuration committed`);
+    configCommitOk = true;
   } catch {
-    console.log(`  ${yellow('!')} Could not auto-commit. Run manually:`);
-    console.log(dim('     git add . && git commit -m "init: project configuration"'));
+    console.log(`  ${yellow('!')} Could not auto-commit.`);
+  }
+
+  if (!configCommitOk) {
+    try {
+      const commitCount = execSync('git rev-list --count HEAD', { cwd: ROOT, encoding: 'utf8', stdio: 'pipe' }).trim();
+      configCommitOk = parseInt(commitCount, 10) > 0;
+    } catch { configCommitOk = false; }
+  }
+
+  if (!configCommitOk) {
+    console.error(`
+  ✖ Project could not be committed to git.
+
+  This is usually caused by missing git identity configuration. Run:
+
+    git config --global user.name "Your Name"
+    git config --global user.email "you@example.com"
+
+  Then run: git add . && git commit -m "init: project configuration"
+  And re-run: npm run agent
+`);
+    process.exit(1);
   }
 
   // ── Pre-commit hook ───────────────────────────────────────────────────────────
