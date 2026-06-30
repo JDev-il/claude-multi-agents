@@ -90,13 +90,13 @@ if (isReInit) {
     let gitOk = false;
     try {
       execSync('git init -b main', { cwd: targetDir, stdio: 'pipe' });
-      execSync('git commit --allow-empty -m "init: project created"', { cwd: targetDir, stdio: 'pipe' });
+      execSync('git commit --no-gpg-sign --allow-empty -m "init: project created"', { cwd: targetDir, stdio: 'pipe' });
       gitOk = true;
     } catch {
       try {
         execSync('git init', { cwd: targetDir, stdio: 'pipe' });
         execSync('git checkout -b main', { cwd: targetDir, stdio: 'pipe' });
-        execSync('git commit --allow-empty -m "init: project created"', { cwd: targetDir, stdio: 'pipe' });
+        execSync('git commit --no-gpg-sign --allow-empty -m "init: project created"', { cwd: targetDir, stdio: 'pipe' });
         gitOk = true;
       } catch { /* both attempts failed */ }
     }
@@ -150,13 +150,13 @@ if (isGlobalCLI) {
     let gitOk = false;
     try {
       execSync('git init -b main', { cwd: targetDir, stdio: 'pipe' });
-      execSync('git commit --allow-empty -m "init: project created"', { cwd: targetDir, stdio: 'pipe' });
+      execSync('git commit --no-gpg-sign --allow-empty -m "init: project created"', { cwd: targetDir, stdio: 'pipe' });
       gitOk = true;
     } catch {
       try {
         execSync('git init', { cwd: targetDir, stdio: 'pipe' });
         execSync('git checkout -b main', { cwd: targetDir, stdio: 'pipe' });
-        execSync('git commit --allow-empty -m "init: project created"', { cwd: targetDir, stdio: 'pipe' });
+        execSync('git commit --no-gpg-sign --allow-empty -m "init: project created"', { cwd: targetDir, stdio: 'pipe' });
         gitOk = true;
       } catch { /* both attempts failed */ }
     }
@@ -734,7 +734,7 @@ Before starting any task, verify:
   let configCommitOk = false;
   try {
     execSync('git add .', { cwd: ROOT, stdio: 'pipe' });
-    execSync('git commit -m "init: project configuration"', { cwd: ROOT, stdio: 'pipe' });
+    execSync('git commit --no-gpg-sign -m "init: project configuration"', { cwd: ROOT, stdio: 'pipe' });
     console.log(`  ${green('✓')} Project configuration committed`);
     configCommitOk = true;
   } catch {
