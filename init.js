@@ -107,15 +107,40 @@ if (isGlobalCLI) {
       'utf8'
     );
 
+    let gitOk = false;
     try {
       execSync('git init -b main', { cwd: targetDir, stdio: 'pipe' });
       execSync('git commit --allow-empty -m "init: project created"', { cwd: targetDir, stdio: 'pipe' });
+      gitOk = true;
     } catch {
       try {
         execSync('git init', { cwd: targetDir, stdio: 'pipe' });
         execSync('git checkout -b main', { cwd: targetDir, stdio: 'pipe' });
         execSync('git commit --allow-empty -m "init: project created"', { cwd: targetDir, stdio: 'pipe' });
-      } catch { /* continue */ }
+        gitOk = true;
+      } catch { /* both attempts failed */ }
+    }
+
+    // Hard gate: verify a commit actually exists before proceeding
+    if (gitOk) {
+      try {
+        const commitCount = execSync('git rev-list --count HEAD', { cwd: targetDir, encoding: 'utf8', stdio: 'pipe' }).trim();
+        gitOk = parseInt(commitCount, 10) > 0;
+      } catch { gitOk = false; }
+    }
+
+    if (!gitOk) {
+      console.error(`
+  ✖ Could not create the initial git commit.
+
+  This is usually caused by missing git identity configuration. Run:
+
+    git config --global user.name "Your Name"
+    git config --global user.email "you@example.com"
+
+  Then re-run: multi-agents init ${path.basename(targetDir)}
+`);
+      process.exit(1);
     }
   }
 }
