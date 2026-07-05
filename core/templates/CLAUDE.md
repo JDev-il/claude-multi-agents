@@ -142,7 +142,8 @@ the agent must:
 
 1. Resolve the project root (OS-agnostic, works on Mac/Linux/Windows):
    ```bash
-   git rev-parse --show-toplevel
+   git rev-parse --path-format=absolute --git-common-dir
+   # then take the parent directory of that path - this is PROJECT_ROOT
    ```
    Store this as PROJECT_ROOT. All subsequent paths (`.scaffold/`, `BUILD_STATE.md`, `CONTRACTS.md`, etc.) resolve from PROJECT_ROOT, never from the worktree directory.
 2. Read `BUILD_STATE.md` at PROJECT_ROOT - understand what has been built
@@ -269,7 +270,7 @@ You are operating inside a git worktree — NOT the main repo root.
 Before editing ANY file, verify you are in your own worktree:
 
 ```bash
-git rev-parse --show-toplevel   # this is your root — stay within it
+git rev-parse --show-toplevel   # this is your own worktree root - stay within it
 ```
 
 Never edit files outside your worktree path. If BUILD_STATE.md or

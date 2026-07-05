@@ -9,6 +9,7 @@
 const fs      = require('fs');
 const path    = require('path');
 const { execSync, spawn } = require('child_process');
+const { sync } = require('./sync');
 
 const ROOT         = path.join(__dirname, '..');
 const WORKFLOW_DIR = __dirname;
@@ -70,6 +71,8 @@ const findCliRoot = () => {
 };
 
 const main = async () => {
+  await sync({ mode: 'auto' });
+
   const stamped   = getStampedVersion();
   const installed = getCurrentVersion();
 
