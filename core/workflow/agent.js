@@ -1406,7 +1406,7 @@ Mark each step complete. Only proceed to the task below when all are checked.
           fs.appendFileSync(beBuildStatePath, beLogEntry, 'utf8');
           try {
             execSync('git add BUILD_STATE.md', { cwd: ROOT, stdio: 'pipe' });
-            execSync(`git commit --no-verify -m "build: INIT task started on backend [${beBranchName}]"`, { cwd: ROOT, stdio: 'pipe' });
+            execSync(`git commit --no-gpg-sign --no-verify -m "build: INIT task started on backend [${beBranchName}]"`, { cwd: ROOT, stdio: 'pipe' });
             console.log(`  ${green('✓')} BUILD_STATE.md updated`);
           } catch {}
         }
@@ -1696,7 +1696,7 @@ ${excludedUrls}
 
     try {
       execSync('git add BUILD_STATE.md', { cwd: ROOT, stdio: 'pipe' });
-      execSync(`git commit --no-verify -m "build: ${agent} task started on ${project} [${branchName}]"`, { cwd: ROOT, stdio: 'pipe' });
+      execSync(`git commit --no-gpg-sign --no-verify -m "build: ${agent} task started on ${project} [${branchName}]"`, { cwd: ROOT, stdio: 'pipe' });
       console.log(`  ${green('✓')} BUILD_STATE.md committed to main`);
     } catch (err) {
       console.log(`  ${yellow('!')} Could not commit BUILD_STATE.md - commit manually if needed`);
