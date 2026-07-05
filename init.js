@@ -679,6 +679,7 @@ Before starting any task, verify:
       restart:  'node .workflow/restart.js',
       reset:    'node .workflow/reset.js',
       complete: 'node .workflow/complete.js',
+      sync:     'node .workflow/sync.js',
     },
   };
   fs.writeFileSync(path.join(ROOT, 'package.json'), JSON.stringify(userPackage, null, 2), 'utf8');
