@@ -1,0 +1,313 @@
+#!/usr/bin/env node
+'use strict';
+
+/**
+ * sync.js  State reconciler.
+ *
+ * Ground truth is git. Reconciles .scaffold/.tracking.json and BUILD_STATE.md
+ * against actual worktrees, branches and merge status. Runs automatically from
+ * run.js before every agent launch, and standalone via npm run sync.
+ *
+ * Design note: status field is read agnostically. Any non null status that is
+ * not COMPLETED or PENDING counts as an in flight (active) slot, so the checks
+ * fire whether agent.js writes ACTIVE or IN PROGRESS.
+ */
+
+const fs   = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+
+const ROOT     = path.join(__dirname, '..');
+const TRACKING = path.join(ROOT, '.scaffold', '.tracking.json');
+const BUILD    = path.join(ROOT, 'BUILD_STATE.md');
+
+// ANSI
+const c = { reset: '\x1b[0m', bold: '\x1b[1m', dim: '\x1b[2m', green: '\x1b[32m', yellow: '\x1b[33m', red: '\x1b[31m' };
+const dim    = (s) => `${c.dim}${s}${c.reset}`;
+const green  = (s) => `${c.green}${s}${c.reset}`;
+const yellow = (s) => `${c.yellow}${s}${c.reset}`;
+const red    = (s) => `${c.red}${s}${c.reset}`;
+const bold   = (s) => `${c.bold}${s}${c.reset}`;
+
+const gitRead = (cmd) => {
+  try { return execSync(`git ${cmd}`, { cwd: ROOT, stdio: 'pipe', encoding: 'utf8' }).trim(); }
+  catch { return null; }
+};
+
+const getWorktrees = () => {
+  const out = gitRead('worktree list --porcelain');
+  if (!out) return [];
+  const wts = [];
+  for (const block of out.split('\n\n')) {
+    const lines = block.split('\n');
+    const p = lines.find(l => l.startsWith('worktree '));
+    const b = lines.find(l => l.startsWith('branch '));
+    if (p && b) {
+      wts.push({
+        path:   p.replace('worktree ', '').trim(),
+        branch: b.replace('branch refs/heads/', '').trim(),
+      });
+    }
+  }
+  return wts;
+};
+
+const getLocalBranches = () => {
+  const out = gitRead('branch --format=%(refname:short)');
+  return out ? out.split('\n').map(s => s.trim()).filter(Boolean) : [];
+};
+
+const getMergedBranches = () => {
+  const out = gitRead('branch --merged main --format=%(refname:short)');
+  return out ? out.split('\n').map(s => s.trim()).filter(Boolean) : [];
+};
+
+const worktreeHealthy = (wtPath) => {
+  if (!wtPath || !fs.existsSync(wtPath)) return false;
+  return fs.existsSync(path.join(wtPath, '.git'));
+};
+
+const loadTracking = () => {
+  try { return JSON.parse(fs.readFileSync(TRACKING, 'utf8')); } catch { return null; }
+};
+const saveTracking = (t) => fs.writeFileSync(TRACKING, JSON.stringify(t, null, 2) + '\n', 'utf8');
+const emptySlot = () => ({ branch: null, timestamp: null, launchedAt: null, status: null, missingCount: 0, worktreePath: null });
+
+const eachSlot = (t, fn) => {
+  for (const scope of Object.keys(t)) {
+    for (const agent of Object.keys(t[scope])) {
+      fn(scope, agent, t[scope][agent]);
+    }
+  }
+};
+
+const TERMINAL = new Set(['COMPLETED']);
+const PARKED   = new Set(['PENDING']);
+const isActive = (slot) => slot.status != null && !TERMINAL.has(slot.status) && !PARKED.has(slot.status);
+
+const SECTION = { client: '## Client State', backend: '## Backend State', shared: '## Shared' };
+
+const flipCheckbox = (content, scope, agent) => {
+  const header = SECTION[scope];
+  if (!header) return content;
+  const start = content.indexOf(header);
+  if (start === -1) return content;
+  const rest  = content.slice(start + header.length);
+  const nextH = rest.indexOf('\n## ');
+  const blockEnd = nextH === -1 ? content.length : start + header.length + nextH;
+  const before = content.slice(0, start);
+  const block  = content.slice(start, blockEnd);
+  const after  = content.slice(blockEnd);
+  const patched = block.replace(`- [ ] ${agent} `, `- [x] ${agent} `);
+  return before + patched + after;
+};
+
+const ensureCompletedRow = (content, scope, agent, branch) => {
+  let patched = false, appended = false;
+  const esc = branch.replace(/\//g, '\\/');
+
+  const inProg = new RegExp(`(\\| [^|]+ \\| [^|]+ \\| [^|]+ \\| [^|]+ \\|) IN PROGRESS (\\| ${esc} \\|)`);
+  if (inProg.test(content)) {
+    content = content.replace(inProg, `$1 COMPLETED $2`);
+    patched = true;
+  } else if (!content.includes(branch)) {
+    const date = new Date().toISOString().split('T')[0];
+    const row  = `| ${date} | ${agent} | ${scope} | reconciled by sync | COMPLETED | ${branch} |`;
+    const lines = content.split('\n');
+    let lastRow = -1;
+    for (let i = 0; i < lines.length; i++) if (/^\|/.test(lines[i])) lastRow = i;
+    if (lastRow !== -1) { lines.splice(lastRow + 1, 0, row); content = lines.join('\n'); appended = true; }
+  }
+  content = flipCheckbox(content, scope, agent);
+  return { content, patched, appended };
+};
+
+const findTaskMd = (wtPath, scope) => {
+  const candidates = [
+    path.join(wtPath, 'TASK.md'),
+    path.join(wtPath, scope, 'TASK.md'),
+    path.join(wtPath, 'client', 'TASK.md'),
+    path.join(wtPath, 'backend', 'TASK.md'),
+  ];
+  return candidates.find(p => fs.existsSync(p)) || null;
+};
+
+const writeSyncNotice = (taskPath, actions, stamp) => {
+  const block = [
+    ``,
+    `<!-- SYNC NOTICE ${stamp} -->`,
+    `## Sync notice`,
+    `sync.js reconciled shared state at this session start:`,
+    ...actions.map(a => `- ${a}`),
+    `Main BUILD_STATE.md and .tracking.json now reflect the above.`,
+    `Re read \`git show main:BUILD_STATE.md\` before continuing.`,
+    `<!-- END SYNC NOTICE -->`,
+    ``,
+  ].join('\n');
+  fs.appendFileSync(taskPath, block, 'utf8');
+};
+
+const arrowSelect = async (message, choices) => {
+  try {
+    const prompts = require('prompts');
+    const res = await prompts({
+      type: 'select', name: 'v', message,
+      choices: choices.map((c2, i) => ({ title: c2, value: i })),
+    });
+    return typeof res.v === 'number' ? res.v : 0;
+  } catch {
+    console.log(`\n  ${message}`);
+    choices.forEach((c2, i) => console.log(`  ${dim(`${i + 1}.`)} ${c2}`));
+    return 0;
+  }
+};
+
+async function sync(opts = {}) {
+  const mode = opts.mode || 'standalone';
+  const tracking = loadTracking();
+  if (!tracking) { if (mode === 'standalone') console.log(dim('  sync: no .tracking.json, nothing to reconcile')); return; }
+
+  const localBranches  = getLocalBranches();
+  const mergedBranches = getMergedBranches();
+  const worktrees      = getWorktrees();
+
+  const actions   = [];
+  const decisions = [];
+  const orphans   = [];
+  let changed = false;
+  let buildChanged = false;
+  const inFlightPatched = new Set();
+
+  // Check 1  branch existence
+  eachSlot(tracking, (scope, agent, slot) => {
+    if (!slot.branch) return;
+    if (!localBranches.includes(slot.branch) && isActive(slot)) {
+      slot.status = 'MISSING'; changed = true;
+      actions.push(`${scope}/${agent}: branch ${slot.branch} gone, marked MISSING`);
+    }
+  });
+
+  // Check 2  worktree health
+  eachSlot(tracking, (scope, agent, slot) => {
+    if (!isActive(slot) && slot.status !== 'MISSING') return;
+    const branchLive = localBranches.includes(slot.branch);
+    const wt = worktrees.find(w => w.branch === slot.branch);
+    const pathLive = wt ? worktreeHealthy(wt.path) : worktreeHealthy(slot.worktreePath);
+
+    if (!pathLive && branchLive && slot.status !== 'MISSING') {
+      slot.status = 'MISSING'; changed = true;
+      actions.push(`${scope}/${agent}: worktree missing, branch alive, marked MISSING`);
+    } else if (!pathLive && !branchLive) {
+      Object.assign(slot, emptySlot()); changed = true;
+      actions.push(`${scope}/${agent}: worktree and branch both gone, tracking cleaned (ABANDONED)`);
+    }
+  });
+
+  // Check 3  merge reflection
+  const buildTargets = [];
+  eachSlot(tracking, (scope, agent, slot) => {
+    if (!slot.branch) return;
+    if (!isActive(slot) && slot.status !== 'MISSING') return;
+    if (mergedBranches.includes(slot.branch)) {
+      const wt = worktrees.find(w => w.branch === slot.branch);
+      if (wt && worktreeHealthy(wt.path)) orphans.push(`${scope}/${agent} -> ${wt.path}`);
+      slot.status = 'COMPLETED';
+      if (!slot.completedAt) slot.completedAt = new Date().toISOString();
+      slot.worktreePath = null;
+      changed = true;
+      actions.push(`${scope}/${agent}: branch merged into main, marked COMPLETED`);
+      buildTargets.push({ scope, agent, branch: slot.branch });
+      inFlightPatched.add(scope);
+    }
+  });
+
+  // Check 4  BUILD_STATE vs tracking drift
+  eachSlot(tracking, (scope, agent, slot) => {
+    if (slot.status !== 'COMPLETED' || !slot.branch) return;
+    if (!buildTargets.find(b => b.branch === slot.branch)) buildTargets.push({ scope, agent, branch: slot.branch });
+  });
+
+  if (buildTargets.length && fs.existsSync(BUILD)) {
+    let content = fs.readFileSync(BUILD, 'utf8');
+    for (const t of buildTargets) {
+      const r = ensureCompletedRow(content, t.scope, t.agent, t.branch);
+      if (r.content !== content) {
+        content = r.content; buildChanged = true;
+        if (r.appended) actions.push(`BUILD_STATE: appended COMPLETED row for ${t.scope}/${t.agent}`);
+        else if (r.patched) actions.push(`BUILD_STATE: ${t.scope}/${t.agent} IN PROGRESS -> COMPLETED`);
+      }
+    }
+    if (buildChanged) fs.writeFileSync(BUILD, content, 'utf8');
+  }
+
+  if (changed) saveTracking(tracking);
+
+  // Check 5  absent scaffold (advisory)
+  for (const scope of Object.keys(tracking)) {
+    if (scope === 'shared') continue;
+    const scopeDir = path.join(ROOT, scope);
+    if (!fs.existsSync(scopeDir)) continue;
+    const slots = Object.values(tracking[scope]);
+    const anyCompleted = slots.some(s => s.status === 'COMPLETED');
+    const anyActive    = slots.some(s => isActive(s));
+    if (!anyCompleted && !anyActive) {
+      decisions.push(`${scope}: scope folder exists but no agent started  run npm run agent to begin`);
+    }
+  }
+
+  // Agent awareness  TASK.md notices
+  if (actions.length && inFlightPatched.size) {
+    const stamp = new Date().toISOString();
+    eachSlot(tracking, (scope, agent, slot) => {
+      if (!isActive(slot) || !inFlightPatched.has(scope)) return;
+      const wt = worktrees.find(w => w.branch === slot.branch);
+      if (!wt || !worktreeHealthy(wt.path)) return;
+      const taskPath = findTaskMd(wt.path, scope);
+      if (!taskPath) { decisions.push(`${scope}/${agent}: live worktree but no TASK.md found for sync notice`); return; }
+      try { writeSyncNotice(taskPath, actions, stamp); actions.push(`TASK.md notice written for in flight ${scope}/${agent}`); }
+      catch (e) { decisions.push(`${scope}/${agent}: TASK.md notice write failed  ${e.message}`); }
+    });
+  }
+
+  // Check 6  dirty state files -> auto commit
+  const dirty = gitRead('status --porcelain') || '';
+  const dirtyState = dirty.split('\n')
+    .map(l => l.slice(3).trim())
+    .filter(f => f === 'BUILD_STATE.md' || f.endsWith('.tracking.json'));
+  if (dirtyState.length) {
+    try {
+      execSync('git add BUILD_STATE.md .scaffold/.tracking.json', { cwd: ROOT, stdio: 'pipe' });
+      execSync('git commit --no-gpg-sign --no-verify -m "sync: reconcile state files"', { cwd: ROOT, stdio: 'pipe' });
+      actions.push(`committed reconciled state files (${dirtyState.join(', ')})`);
+    } catch (e) {
+      decisions.push(`state files dirty but auto commit failed  ${e.message}`);
+    }
+  }
+
+  const clean = !actions.length && !decisions.length && !orphans.length;
+  if (clean) { if (mode === 'standalone') console.log(green('  \u2713 state in sync')); return; }
+
+  console.log(`\n${bold('  Sync report')}`);
+  if (actions.length) {
+    console.log(green('  auto patched:'));
+    actions.forEach(a => console.log(dim('    \u00b7 ') + a));
+  }
+  if (orphans.length) {
+    console.log(yellow('  orphaned worktrees (merged, safe to remove):'));
+    orphans.forEach(o => console.log(dim('    \u00b7 ') + o + dim('   git worktree remove <path>')));
+  }
+  if (decisions.length) {
+    console.log(yellow('  needs your attention:'));
+    decisions.forEach(d => console.log(dim('    \u00b7 ') + d));
+    if (mode === 'standalone') {
+      await arrowSelect('How to proceed?', ['Acknowledge and continue', 'Abort']);
+    }
+  }
+  console.log('');
+}
+
+module.exports = { sync };
+
+if (require.main === module) {
+  sync({ mode: 'standalone' }).catch(err => { console.error(red('  sync error: ') + err.message); process.exit(1); });
+}
