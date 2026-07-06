@@ -243,7 +243,7 @@ const main = async () => {
   separator();
 
   const { spawn } = require('child_process');
-  const initProc = spawn('node', [path.join(ROOT, 'init.js')], { stdio: 'inherit', cwd: ROOT });
+  const initProc = spawn('multi-agents', ['init'], { stdio: 'inherit', cwd: ROOT });
   initProc.on('exit', (code) => process.exit(code || 0));
 };
 
