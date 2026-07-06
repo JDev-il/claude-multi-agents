@@ -167,6 +167,49 @@ const wipeAgent = ({ scope, agent, branch, worktreePath }) => {
       if (fs.existsSync(tmplPath)) {
         fs.mkdirSync(scopeDir, { recursive: true });
         fs.copyFileSync(tmplPath, claudePath);
+        // Substitute @config values from .config.json (primary) or git history (secondary)
+        try {
+          let restored = fs.readFileSync(claudePath, 'utf8');
+          const scopeCfg = config[scope] || {};
+          const configMap = {
+            PROJECT_NAME:      config.projectName,
+            FRAMEWORK:         scopeCfg.framework,
+            FRAMEWORK_VERSION: scopeCfg.frameworkVersion,
+            LANGUAGE:          scopeCfg.language,
+            UI_LIBRARY:        scopeCfg.uiLibrary,
+            STATE:             scopeCfg.state,
+            STYLING:           scopeCfg.styling,
+            ORM:               scopeCfg.orm,
+            AUTH:              scopeCfg.auth,
+          };
+          for (const [key, val] of Object.entries(configMap)) {
+            if (val) restored = restored.replace(
+              new RegExp(`(# @config ${key}\\s*:).*$`, 'm'), `$1 ${val}`
+            );
+          }
+          // Secondary: git history fallback if config values still missing
+          try {
+            const firstCommit = require('child_process').execSync(
+              `git log --all --reverse --format=%H -- ${scope}/CLAUDE.md`,
+              { cwd: ROOT, stdio: 'pipe', encoding: 'utf8' }
+            ).trim().split('\n')[0];
+            if (firstCommit) {
+              const oldContent = require('child_process').execSync(
+                `git show ${firstCommit}:${scope}/CLAUDE.md`,
+                { cwd: ROOT, stdio: 'pipe', encoding: 'utf8' }
+              );
+              for (const line of oldContent.split('\n').filter(l => /^# @config \w/.test(l))) {
+                const m = line.match(/^# @config (\w+)\s*:\s*(.+)$/);
+                if (m && !configMap[m[1].trim()]) {
+                  restored = restored.replace(
+                    new RegExp(`(# @config ${m[1].trim()}\\s*:).*$`, 'm'), `$1 ${m[2].trim()}`
+                  );
+                }
+              }
+            }
+          } catch {}
+          fs.writeFileSync(claudePath, restored, 'utf8');
+        } catch {}
       }
     }
   } catch {}

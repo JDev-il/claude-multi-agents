@@ -503,6 +503,36 @@ const main = async () => {
   });
   console.log(`  ${green('✓')} client/CLAUDE.md configured`);
 
+  // Persist resolved config to .scaffold/.config.json for recovery by restart/sync
+  try {
+    const scaffoldConfig = {
+      projectName,
+      client: {
+        framework:        clientFw.value,
+        frameworkVersion: clientFwVersion || '',
+        language:         clientLang,
+        state:            clientState,
+        uiLibrary:        clientUi,
+        styling:          clientStyle,
+      },
+    };
+    if (backendType === 'separate') {
+      scaffoldConfig.backend = {
+        framework:        backendFw,
+        frameworkVersion: answers.backendFwVersion || '',
+        language:         backendLang,
+        orm:              backendOrm,
+        auth:             backendAuth,
+      };
+    }
+    fs.writeFileSync(
+      path.join(ROOT, '.scaffold', '.config.json'),
+      JSON.stringify(scaffoldConfig, null, 2) + '\n',
+      'utf8'
+    );
+    console.log(`  ${green('✓')} .scaffold/.config.json written`);
+  } catch {}
+
   if (backendType === 'separate') {
     writeConfig(path.join(ROOT, 'backend', 'CLAUDE.md'), {
       PROJECT_NAME:      projectName,
