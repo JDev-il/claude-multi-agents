@@ -145,6 +145,23 @@ const wipeAgent = ({ scope, agent, branch, worktreePath }) => {
   try { execSync(`git branch -D ${branch}`, { cwd: ROOT, stdio: 'pipe' }); } catch {}
   try { execSync(`git push origin --delete ${branch}`, { cwd: ROOT, stdio: 'pipe' }); } catch {}
 
+  // If scope folder has agent-built content on main, remove it so new branch starts clean
+  // Use filesystem truth, not tracking status (tracking may already be cleared by prior restart)
+  const scopeDir = require('path').join(ROOT, scope);
+  if (fs.existsSync(scopeDir)) {
+    const scopeContents = fs.readdirSync(scopeDir).filter(f => f !== 'CLAUDE.md');
+    if (scopeContents.length > 0) {
+      try {
+        fs.rmSync(scopeDir, { recursive: true, force: true });
+        require('child_process').execSync('git add -A', { cwd: ROOT, stdio: 'pipe' });
+        require('child_process').execSync(
+          `git commit --no-gpg-sign --no-verify -m "chore: remove ${scope} scope content for restart"`,
+          { cwd: ROOT, stdio: 'pipe' }
+        );
+      } catch {}
+    }
+  }
+
   if (tracking[scope]?.[agent]) {
     tracking[scope][agent] = { branch: null, timestamp: null, launchedAt: null, status: null, missingCount: 0, worktreePath: null };
     fs.writeFileSync(TRACKING_PATH, JSON.stringify(tracking, null, 2), 'utf8');
