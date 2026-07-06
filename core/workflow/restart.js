@@ -152,7 +152,10 @@ const wipeAgent = ({ scope, agent, branch, worktreePath }) => {
     const scopeContents = fs.readdirSync(scopeDir).filter(f => f !== 'CLAUDE.md');
     if (scopeContents.length > 0) {
       try {
-        fs.rmSync(scopeDir, { recursive: true, force: true });
+        // Delete each entry individually - preserve CLAUDE.md
+        for (const entry of scopeContents) {
+          fs.rmSync(require('path').join(scopeDir, entry), { recursive: true, force: true });
+        }
         require('child_process').execSync('git add -A', { cwd: ROOT, stdio: 'pipe' });
         require('child_process').execSync(
           `git commit --no-gpg-sign --no-verify -m "chore: remove ${scope} scope content for restart"`,
