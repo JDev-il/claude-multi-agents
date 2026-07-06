@@ -53,12 +53,12 @@ const getWorktrees = () => {
 };
 
 const getLocalBranches = () => {
-  const out = gitRead('branch --format=%(refname:short)');
+  const out = gitRead('branch --format=\"%(refname:short)\"');
   return out ? out.split('\n').map(s => s.trim()).filter(Boolean) : [];
 };
 
 const getMergedBranches = () => {
-  const out = gitRead('branch --merged main --format=%(refname:short)');
+  const out = gitRead('branch --merged main --format=\"%(refname:short)\"');
   return out ? out.split('\n').map(s => s.trim()).filter(Boolean) : [];
 };
 
