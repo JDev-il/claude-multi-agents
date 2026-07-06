@@ -128,6 +128,26 @@ const updateBuildState = (branch, status, notes = '') => {
     `$1 ${status} $2`
   );
 
+  // Flip checkbox in the relevant scope section
+  const branchParts = branch.split('/');
+  const scope = branchParts[1];
+  const agentName = branchParts[2] ? branchParts[2].toUpperCase() : null;
+  if (scope && agentName && status === 'COMPLETED') {
+    const sectionMap = { client: '## Client State', backend: '## Backend State', shared: '## Shared' };
+    const header = sectionMap[scope];
+    if (header) {
+      const start = content.indexOf(header);
+      if (start !== -1) {
+        const rest = content.slice(start + header.length);
+        const nextH = rest.indexOf('\n## ');
+        const blockEnd = nextH === -1 ? content.length : start + header.length + nextH;
+        const block = content.slice(start, blockEnd);
+        const patched = block.replace('- [ ] ' + agentName + ' ', '- [x] ' + agentName + ' ');
+        content = content.slice(0, start) + patched + content.slice(blockEnd);
+      }
+    }
+  }
+
   fs.writeFileSync(buildStatePath, content, 'utf8');
 
   // Update TASKS_HISTORY.md
