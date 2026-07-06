@@ -182,6 +182,7 @@ const openTerminal = (worktreePath, skipPermissions = false) => {
   try {
     if (process.platform === 'darwin') {
       execSync('osascript -e \'tell app "' + termCmd + '" to do script "cd \\"' + worktreePath + '\\" && ' + claudeCmd + '"\'', { stdio: 'pipe' });
+      try { execSync('osascript -e \'tell app "' + termCmd + '" to activate\'', { stdio: 'pipe' }); } catch {}
     } else if (process.platform === 'win32') {
       execSync('start ' + termCmd + ' /k "cd /d ' + worktreePath + ' && ' + claudeCmd + '"', { stdio: 'pipe' });
     } else {
@@ -1741,9 +1742,9 @@ ${excludedUrls}
   ], rl);
 
   if (sessionIdx === 0) {
-    separator();
-    console.log(`\n  ${bold('What happens next:')}
-`);
+    console.log('\n  ' + '\x1b[36m' + '┌─────────────────────────────────────────┐' + '\x1b[0m');
+    console.log('  ' + '\x1b[36m' + '│' + '\x1b[0m' + '  \x1b[1m\x1b[36m  What happens next                    \x1b[0m' + '\x1b[36m│' + '\x1b[0m');
+    console.log('  ' + '\x1b[36m' + '└─────────────────────────────────────────┘' + '\x1b[0m' + '\n');
     console.log(`  ${dim('→')} ${bold(config.ide.name || 'Your IDE')} will open at your agent workspace`);
     console.log(`  ${dim('→')} A new terminal window will open with Claude Code\n`);
     console.log(`  ${bold('Once open:')}
@@ -1764,9 +1765,9 @@ ${excludedUrls}
     process.exit(0);
 
   } else if (sessionIdx === 1) {
-    separator();
-    console.log(`\n  ${bold('What happens next:')}
-`);
+    console.log('\n  ' + '\x1b[36m' + '┌─────────────────────────────────────────┐' + '\x1b[0m');
+    console.log('  ' + '\x1b[36m' + '│' + '\x1b[0m' + '  \x1b[1m\x1b[36m  What happens next                    \x1b[0m' + '\x1b[36m│' + '\x1b[0m');
+    console.log('  ' + '\x1b[36m' + '└─────────────────────────────────────────┘' + '\x1b[0m' + '\n');
     console.log(`  ${dim('→')} ${bold(config.ide.name || 'Your IDE')} will open at your agent workspace\n`);
     console.log(`  ${bold('Once open:')}
 `);
@@ -1783,9 +1784,9 @@ ${excludedUrls}
     process.exit(0);
 
   } else if (sessionIdx === 2) {
-    separator();
-    console.log(`\n  ${bold('What happens next:')}
-`);
+    console.log('\n  ' + '\x1b[36m' + '┌─────────────────────────────────────────┐' + '\x1b[0m');
+    console.log('  ' + '\x1b[36m' + '│' + '\x1b[0m' + '  \x1b[1m\x1b[36m  What happens next                    \x1b[0m' + '\x1b[36m│' + '\x1b[0m');
+    console.log('  ' + '\x1b[36m' + '└─────────────────────────────────────────┘' + '\x1b[0m' + '\n');
     console.log(`  ${dim('→')} A new terminal window will open with Claude Code\n`);
     console.log(`  ${bold('Once open:')}
 `);
