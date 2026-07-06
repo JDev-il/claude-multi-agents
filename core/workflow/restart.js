@@ -156,6 +156,18 @@ const wipeAgent = ({ scope, agent, branch, worktreePath }) => {
         for (const entry of scopeContents) {
           fs.rmSync(require('path').join(scopeDir, entry), { recursive: true, force: true });
         }
+        // Restore CLAUDE.md from CLI templates if missing
+        const claudePath = require('path').join(scopeDir, 'CLAUDE.md');
+        if (!fs.existsSync(claudePath)) {
+          try {
+            const globalPkg = require('child_process').execSync('npm root -g', { stdio: 'pipe', encoding: 'utf8' }).trim();
+            const tmplPath = require('path').join(globalPkg, 'multi-agents-cli', 'core', 'templates', scope, 'CLAUDE.md');
+            if (fs.existsSync(tmplPath)) {
+              fs.mkdirSync(scopeDir, { recursive: true });
+              fs.copyFileSync(tmplPath, claudePath);
+            }
+          } catch {}
+        }
         require('child_process').execSync('git add -A', { cwd: ROOT, stdio: 'pipe' });
         require('child_process').execSync(
           `git commit --no-gpg-sign --no-verify -m "chore: remove ${scope} scope content for restart"`,
