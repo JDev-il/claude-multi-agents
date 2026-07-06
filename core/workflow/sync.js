@@ -221,6 +221,51 @@ async function sync(opts = {}) {
     }
   });
 
+  // Check 3b  staleness / stuck-push detection
+  const STALE_THRESHOLD_MS = 4 * 60 * 60 * 1000; // 4 hours - single constant, tune here
+  eachSlot(tracking, (scope, agent, slot) => {
+    if (!slot.branch) return;
+    if (!isActive(slot) && slot.status !== 'MISSING') return;
+    if (mergedBranches.includes(slot.branch)) return; // already handled by check 3
+
+    // Primary signal: TASK.md says [x] COMPLETED but branch not merged -> stalled push
+    const wt = worktrees.find(w => w.branch === slot.branch);
+    const wtPath = wt ? wt.path : slot.worktreePath;
+    if (wtPath && worktreeHealthy(wtPath)) {
+      const taskPath = findTaskMd(wtPath, scope);
+      if (taskPath) {
+        try {
+          const taskContent = fs.readFileSync(taskPath, 'utf8');
+          if (taskContent.includes('[x] COMPLETED')) {
+            decisions.push(
+              `${scope}/${agent}: TASK.md marked COMPLETED but branch not merged - push/merge likely failed. \n` +
+              `    Run: git push origin ${slot.branch} && npm run complete`
+            );
+            return;
+          }
+        } catch {}
+      }
+    }
+
+    // Secondary signal: no commits in > STALE_THRESHOLD_MS since launch (softer advisory)
+    if (slot.launchedAt) {
+      try {
+        const lastCommitTs = parseInt(
+          execSync(`git log -1 --format=%ct ${slot.branch}`, { cwd: ROOT, stdio: 'pipe', encoding: 'utf8' }).trim(),
+          10
+        ) * 1000;
+        const launchedAt = new Date(slot.launchedAt).getTime();
+        const elapsed = Date.now() - Math.max(lastCommitTs, launchedAt);
+        if (elapsed > STALE_THRESHOLD_MS) {
+          const hours = Math.round(elapsed / 1000 / 60 / 60);
+          decisions.push(
+            `${scope}/${agent}: no new commits in ~${hours}h - may be stalled or still running, check manually`
+          );
+        }
+      } catch {}
+    }
+  });
+
   // Check 4  BUILD_STATE vs tracking drift
   eachSlot(tracking, (scope, agent, slot) => {
     if (slot.status !== 'COMPLETED' || !slot.branch) return;
