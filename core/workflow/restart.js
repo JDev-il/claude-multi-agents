@@ -152,30 +152,32 @@ const wipeAgent = ({ scope, agent, branch, worktreePath }) => {
     const scopeContents = fs.readdirSync(scopeDir).filter(f => f !== 'CLAUDE.md');
     if (scopeContents.length > 0) {
       try {
-        // Delete each entry individually - preserve CLAUDE.md
         for (const entry of scopeContents) {
           fs.rmSync(require('path').join(scopeDir, entry), { recursive: true, force: true });
         }
-        // Restore CLAUDE.md from CLI templates if missing
-        const claudePath = require('path').join(scopeDir, 'CLAUDE.md');
-        if (!fs.existsSync(claudePath)) {
-          try {
-            const globalPkg = require('child_process').execSync('npm root -g', { stdio: 'pipe', encoding: 'utf8' }).trim();
-            const tmplPath = require('path').join(globalPkg, 'multi-agents-cli', 'core', 'templates', scope, 'CLAUDE.md');
-            if (fs.existsSync(tmplPath)) {
-              fs.mkdirSync(scopeDir, { recursive: true });
-              fs.copyFileSync(tmplPath, claudePath);
-            }
-          } catch {}
-        }
-        require('child_process').execSync('git add -A', { cwd: ROOT, stdio: 'pipe' });
-        require('child_process').execSync(
-          `git commit --no-gpg-sign --no-verify -m "chore: remove ${scope} scope content for restart"`,
-          { cwd: ROOT, stdio: 'pipe' }
-        );
       } catch {}
     }
   }
+  // Always ensure scope CLAUDE.md exists - restore from CLI templates if missing or folder gone
+  try {
+    const claudePath = require('path').join(scopeDir, 'CLAUDE.md');
+    if (!fs.existsSync(claudePath)) {
+      const globalPkg = require('child_process').execSync('npm root -g', { stdio: 'pipe', encoding: 'utf8' }).trim();
+      const tmplPath = require('path').join(globalPkg, 'multi-agents-cli', 'core', 'templates', scope, 'CLAUDE.md');
+      if (fs.existsSync(tmplPath)) {
+        fs.mkdirSync(scopeDir, { recursive: true });
+        fs.copyFileSync(tmplPath, claudePath);
+      }
+    }
+  } catch {}
+  // Commit any scope changes to main
+  try {
+    require('child_process').execSync('git add -A', { cwd: ROOT, stdio: 'pipe' });
+    require('child_process').execSync(
+      `git commit --no-gpg-sign --no-verify -m "chore: remove ${scope} scope content for restart"`,
+      { cwd: ROOT, stdio: 'pipe' }
+    );
+  } catch {}
 
   if (tracking[scope]?.[agent]) {
     tracking[scope][agent] = { branch: null, timestamp: null, launchedAt: null, status: null, missingCount: 0, worktreePath: null };
