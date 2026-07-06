@@ -1743,15 +1743,17 @@ ${excludedUrls}
 
   if (sessionIdx === 0) {
     console.log('');
-    console.log('  ' + '\x1b[7m' + '  What happens next                                       ' + '\x1b[0m');
-    console.log('  ' + '\x1b[1m' + '─────────────────────────────────────────────────────────' + '\x1b[0m');
-    console.log(`  ${dim('→')} ${bold(config.ide.name || 'Your IDE')} will open at your agent workspace`);
-    console.log(`  ${dim('→')} A new terminal window will open with Claude Code\n`);
-    console.log(`  ${bold('Once open:')}
-`);
-    console.log(`  ${bold('2.')} Type anything to start ${dim("(e.g. 'go', 'start', 'begin')")}`);
-    console.log(`  ${bold('3.')} Let the agent run autonomously — don't interrupt mid-task`);
-    console.log(`  ${bold('The agent')} will run ${cyan('npm run complete')} automatically when done\n`);
+    console.log('  \x1b[7m  What happens next                                         \x1b[0m');
+    console.log('  ┌─────────────────────────────────────────────────────────┐');
+    console.log('  │  → \x1b[1m' + (config.ide.name || 'Your IDE') + '\x1b[0m will open at your agent workspace          │');
+    console.log('  │  → A new terminal window will open with Claude Code     │');
+    console.log('  │                                                         │');
+    console.log('  │  \x1b[1mOnce open:\x1b[0m                                              │');
+    console.log('  │  \x1b[1m2.\x1b[0m Type anything \x1b[2m(e.g. go, start, begin)\x1b[0m               │');
+    console.log('  │  \x1b[1m3.\x1b[0m Let the agent run — don\'t interrupt mid-task         │');
+    console.log('  │  \x1b[1mThe agent\x1b[0m will run \x1b[36mnpm run complete\x1b[0m automatically      │');
+    console.log('  └─────────────────────────────────────────────────────────┘');
+    console.log('');
     const goIdx = await arrowSelect('Ready?', [{ label: `${green('✓')} Open workspace` }, { label: `${dim('←')} Back` }], rl);
     if (goIdx === 1) { continue sessionLoop; }
     const openedIDE = openIDE(worktreePath);
@@ -1766,15 +1768,17 @@ ${excludedUrls}
 
   } else if (sessionIdx === 1) {
     console.log('');
-    console.log('  ' + '\x1b[7m' + '  What happens next                                       ' + '\x1b[0m');
-    console.log('  ' + '\x1b[1m' + '─────────────────────────────────────────────────────────' + '\x1b[0m');
-    console.log(`  ${dim('→')} ${bold(config.ide.name || 'Your IDE')} will open at your agent workspace\n`);
-    console.log(`  ${bold('Once open:')}
-`);
-    console.log(`  ${bold('1.')} Open a new Claude Code session inside the IDE`);
-    console.log(`  ${bold('3.')} Type anything to start ${dim("(e.g. 'go', 'start', 'begin')")}`);
-    console.log(`  ${bold('4.')} Let the agent run autonomously — don't interrupt mid-task`);
-    console.log(`  ${bold('The agent')} will run ${cyan('npm run complete')} automatically when done\n`);
+    console.log('  \x1b[7m  What happens next                                         \x1b[0m');
+    console.log('  ┌─────────────────────────────────────────────────────────┐');
+    console.log('  │  → \x1b[1m' + (config.ide.name || 'Your IDE') + '\x1b[0m will open at your agent workspace          │');
+    console.log('  │                                                         │');
+    console.log('  │  \x1b[1mOnce open:\x1b[0m                                              │');
+    console.log('  │  \x1b[1m1.\x1b[0m Open a new Claude Code session inside the IDE        │');
+    console.log('  │  \x1b[1m3.\x1b[0m Type anything \x1b[2m(e.g. go, start, begin)\x1b[0m               │');
+    console.log('  │  \x1b[1m4.\x1b[0m Let the agent run — don\'t interrupt mid-task         │');
+    console.log('  │  \x1b[1mThe agent\x1b[0m will run \x1b[36mnpm run complete\x1b[0m automatically      │');
+    console.log('  └─────────────────────────────────────────────────────────┘');
+    console.log('');
     const goIdx = await arrowSelect('Ready?', [{ label: `${green('✓')} Open workspace` }, { label: `${dim('←')} Back` }], rl);
     if (goIdx === 1) { continue sessionLoop; }
     const openedIDE = openIDE(worktreePath);
@@ -1785,14 +1789,16 @@ ${excludedUrls}
 
   } else if (sessionIdx === 2) {
     console.log('');
-    console.log('  ' + '\x1b[7m' + '  What happens next                                       ' + '\x1b[0m');
-    console.log('  ' + '\x1b[1m' + '─────────────────────────────────────────────────────────' + '\x1b[0m');
-    console.log(`  ${dim('→')} A new terminal window will open with Claude Code\n`);
-    console.log(`  ${bold('Once open:')}
-`);
-    console.log(`  ${bold('2.')} Type anything to start ${dim("(e.g. 'go', 'start', 'begin')")}`);
-    console.log(`  ${bold('3.')} Let the agent run autonomously — don't interrupt mid-task`);
-    console.log(`  ${bold('The agent')} will run ${cyan('npm run complete')} automatically when done\n`);
+    console.log('  \x1b[7m  What happens next                                         \x1b[0m');
+    console.log('  ┌─────────────────────────────────────────────────────────┐');
+    console.log('  │  → A new terminal window will open with Claude Code     │');
+    console.log('  │                                                         │');
+    console.log('  │  \x1b[1mOnce open:\x1b[0m                                              │');
+    console.log('  │  \x1b[1m2.\x1b[0m Type anything \x1b[2m(e.g. go, start, begin)\x1b[0m               │');
+    console.log('  │  \x1b[1m3.\x1b[0m Let the agent run — don\'t interrupt mid-task         │');
+    console.log('  │  \x1b[1mThe agent\x1b[0m will run \x1b[36mnpm run complete\x1b[0m automatically      │');
+    console.log('  └─────────────────────────────────────────────────────────┘');
+    console.log('');
     const goIdx = await arrowSelect('Ready?', [{ label: `${green('✓')} Open workspace` }, { label: `${dim('←')} Back` }], rl);
     if (goIdx === 1) { continue sessionLoop; }
     const termOpened = openTerminal(worktreePath, skipPermissions);
