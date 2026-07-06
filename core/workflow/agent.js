@@ -1742,9 +1742,9 @@ ${excludedUrls}
   ], rl);
 
   if (sessionIdx === 0) {
-    console.log('\n  ' + '\x1b[36m' + '┌─────────────────────────────────────────┐' + '\x1b[0m');
-    console.log('  ' + '\x1b[36m' + '│' + '\x1b[0m' + '  \x1b[1m\x1b[36m  What happens next                    \x1b[0m' + '\x1b[36m│' + '\x1b[0m');
-    console.log('  ' + '\x1b[36m' + '└─────────────────────────────────────────┘' + '\x1b[0m' + '\n');
+    console.log('');
+    console.log('  ' + '\x1b[7m' + '  What happens next                                       ' + '\x1b[0m');
+    console.log('  ' + '\x1b[1m' + '─────────────────────────────────────────────────────────' + '\x1b[0m');
     console.log(`  ${dim('→')} ${bold(config.ide.name || 'Your IDE')} will open at your agent workspace`);
     console.log(`  ${dim('→')} A new terminal window will open with Claude Code\n`);
     console.log(`  ${bold('Once open:')}
@@ -1765,9 +1765,9 @@ ${excludedUrls}
     process.exit(0);
 
   } else if (sessionIdx === 1) {
-    console.log('\n  ' + '\x1b[36m' + '┌─────────────────────────────────────────┐' + '\x1b[0m');
-    console.log('  ' + '\x1b[36m' + '│' + '\x1b[0m' + '  \x1b[1m\x1b[36m  What happens next                    \x1b[0m' + '\x1b[36m│' + '\x1b[0m');
-    console.log('  ' + '\x1b[36m' + '└─────────────────────────────────────────┘' + '\x1b[0m' + '\n');
+    console.log('');
+    console.log('  ' + '\x1b[7m' + '  What happens next                                       ' + '\x1b[0m');
+    console.log('  ' + '\x1b[1m' + '─────────────────────────────────────────────────────────' + '\x1b[0m');
     console.log(`  ${dim('→')} ${bold(config.ide.name || 'Your IDE')} will open at your agent workspace\n`);
     console.log(`  ${bold('Once open:')}
 `);
@@ -1784,9 +1784,9 @@ ${excludedUrls}
     process.exit(0);
 
   } else if (sessionIdx === 2) {
-    console.log('\n  ' + '\x1b[36m' + '┌─────────────────────────────────────────┐' + '\x1b[0m');
-    console.log('  ' + '\x1b[36m' + '│' + '\x1b[0m' + '  \x1b[1m\x1b[36m  What happens next                    \x1b[0m' + '\x1b[36m│' + '\x1b[0m');
-    console.log('  ' + '\x1b[36m' + '└─────────────────────────────────────────┘' + '\x1b[0m' + '\n');
+    console.log('');
+    console.log('  ' + '\x1b[7m' + '  What happens next                                       ' + '\x1b[0m');
+    console.log('  ' + '\x1b[1m' + '─────────────────────────────────────────────────────────' + '\x1b[0m');
     console.log(`  ${dim('→')} A new terminal window will open with Claude Code\n`);
     console.log(`  ${bold('Once open:')}
 `);
