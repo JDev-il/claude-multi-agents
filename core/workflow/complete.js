@@ -572,7 +572,7 @@ const main = async () => {
     const _tracking = guards.loadTracking(ROOT, config);
     const beSlot    = _tracking?.backend?.INIT;
     if (
-      _scope === 'logic' &&
+      _agent === 'LOGIC' &&
       _parts[0] === 'agent' && _parts[1] === 'client' &&
       beSlot?.backendLaunchTiming === 'after' &&
       beSlot?.status !== 'ACTIVE' &&
