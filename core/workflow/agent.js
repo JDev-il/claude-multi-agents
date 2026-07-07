@@ -1724,16 +1724,6 @@ ${excludedUrls}
     }, 600);
   });
 
-  const permIdx = await arrowSelect(
-    'Grant agent full permissions for this session?',
-    [
-      { label: `${green('→')} Yes — skip all permission prompts ${dim('(recommended — some compound commands may still prompt)')}` },
-      { label: `${dim('→')} No  — I'll approve each action manually` },
-    ],
-    rl
-  );
-  const skipPermissions = permIdx === 0;
-
   const outputModeIdx = await arrowSelect(
     'Agent output mode for this session?',
     [
@@ -1744,6 +1734,16 @@ ${excludedUrls}
     rl
   );
   const outputMode = ['full', 'insights', 'silent'][outputModeIdx];
+
+  const permIdx = await arrowSelect(
+    'Grant agent full permissions for this session?',
+    [
+      { label: `${green('→')} Yes — skip all permission prompts ${dim('(recommended — some compound commands may still prompt)')}` },
+      { label: `${dim('→')} No  — I'll approve each action manually` },
+    ],
+    rl
+  );
+  const skipPermissions = permIdx === 0;
 
   sessionLoop: while (true) {
   const sessionIdx = await arrowSelect('How would you like to start the session?', [
