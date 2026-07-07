@@ -600,6 +600,14 @@ const main = async () => {
   fs.writeFileSync(path.join(RUNTIME_DIR, '.config.json'), JSON.stringify(config, null, 2), 'utf8');
   console.log(`  ${green('✓')} .scaffold/.config.json written`);
 
+  // ── dependencies.json ─────────────────────────────────────────────────────────
+
+  const depsPath = path.join(RUNTIME_DIR, 'dependencies.json');
+  if (!fs.existsSync(depsPath)) {
+    fs.writeFileSync(depsPath, JSON.stringify({ relationships: [] }, null, 2), 'utf8');
+    console.log(`  ${green('✓')} .scaffold/dependencies.json initialized`);
+  }
+
   // ── scope-policy.json ─────────────────────────────────────────────────────────
 
   const scopePolicy = {

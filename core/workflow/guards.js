@@ -107,6 +107,39 @@ const loadTracking = (ROOT, config) => {
   }
 };
 
+
+// ── Load relationships ────────────────────────────────────────────────────────
+
+const loadRelationships = (ROOT) => {
+  const depPath = path.join(ROOT, '.scaffold', 'dependencies.json');
+  if (!fs.existsSync(depPath)) return { relationships: [] };
+  try {
+    return JSON.parse(fs.readFileSync(depPath, 'utf8'));
+  } catch {
+    console.log(yellow('  ⚠ dependencies.json is corrupt - resetting.'));
+    const fresh = { relationships: [] };
+    fs.writeFileSync(depPath, JSON.stringify(fresh, null, 2), 'utf8');
+    return fresh;
+  }
+};
+
+// ── Update relationship entry ─────────────────────────────────────────────────
+
+const updateRelationship = (ROOT, entry) => {
+  const depPath = path.join(ROOT, '.scaffold', 'dependencies.json');
+  const deps = loadRelationships(ROOT);
+  const idx = deps.relationships.findIndex(
+    r => r.author === entry.author && r.type === entry.type && r.child === entry.child
+  );
+  if (idx !== -1) {
+    deps.relationships[idx] = { ...deps.relationships[idx], ...entry };
+  } else {
+    deps.relationships.push(entry);
+  }
+  fs.writeFileSync(depPath, JSON.stringify(deps, null, 2), 'utf8');
+  return deps;
+};
+
 // ── Write tracking slot ───────────────────────────────────────────────────────
 
 const updateTrackingSlot = (tracking, scope, agent, data, ROOT) => {
@@ -673,6 +706,8 @@ module.exports = {
   generateTrackingStructure,
   loadTracking,
   updateTrackingSlot,
+  loadRelationships,
+  updateRelationship,
   clearTrackingSlot,
   validateConfig,
   checkAgentActive,

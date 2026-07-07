@@ -1413,6 +1413,18 @@ Mark each step complete. Only proceed to the task below when all are checked.
           backendLaunchTiming: 'now',
         }, ROOT);
 
+        // Relationship
+        guards.updateRelationship(ROOT, {
+          author:       worktreeName,
+          parent:       `${project}/${agent}`,
+          child:        'backend/INIT',
+          type:         'spawn',
+          at:           timestamp,
+          parentBranch: branchName,
+          childBranch:  beBranchName,
+          status:       'active',
+        });
+
         // TASKS_HISTORY
         tasksHistory.ensureHistoryFile(ROOT);
         tasksHistory.writeSessionEntry(ROOT, { scope: 'backend', agent: 'INIT', branch: beBranchName, task: beTask, launchedAt: new Date().toISOString() });
