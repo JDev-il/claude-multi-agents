@@ -486,6 +486,7 @@ project      : ${project}
 agent        : ${agent}
 branch       : ${branchName}
 worktree     : ${worktreePath}
+output_mode  : ${outputMode}
 
 ## Scope Verification Rule
 Before doing anything else, verify:
@@ -1732,6 +1733,17 @@ ${excludedUrls}
     rl
   );
   const skipPermissions = permIdx === 0;
+
+  const outputModeIdx = await arrowSelect(
+    'Agent output mode for this session?',
+    [
+      { label: `${green('→')} Full output      ${dim('— see everything (default)')}` },
+      { label: `${green('→')} Insights only    ${dim('— phase narrations + important blocks')}` },
+      { label: `${green('→')} Silent           ${dim('— spinner + critical blocks only')}` },
+    ],
+    rl
+  );
+  const outputMode = ['full', 'insights', 'silent'][outputModeIdx];
 
   sessionLoop: while (true) {
   const sessionIdx = await arrowSelect('How would you like to start the session?', [
