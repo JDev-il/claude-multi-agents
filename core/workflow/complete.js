@@ -37,7 +37,15 @@ const red    = (s) => `${c.red}${s}${c.reset}`;
 
 // ── Paths ─────────────────────────────────────────────────────────────────────
 
-const ROOT        = path.join(__dirname, '..');
+const ROOT        = (() => {
+  try {
+    const common = execSync('git rev-parse --git-common-dir', { stdio: 'pipe' }).toString().trim();
+    return common.endsWith('/.git') ? common.slice(0, -5) : require('path').resolve(common, '..');
+  } catch {
+    console.error('  Not inside a git repository.\n');
+    process.exit(1);
+  }
+})();
 const CONFIG_PATH = path.join(ROOT, '.scaffold', '.config.json');
 const LOCK_PATH   = path.join(ROOT, '.scaffold', '.initialized');
 

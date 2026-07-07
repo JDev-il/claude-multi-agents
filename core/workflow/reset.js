@@ -24,7 +24,15 @@ try { prompts = require('prompts'); } catch { prompts = null; }
 
 // ── Self-relocate to repo root ────────────────────────────────────────────────
 
-const ROOT = path.join(__dirname, '..');
+const ROOT = (() => {
+  try {
+    const common = execSync('git rev-parse --git-common-dir', { stdio: 'pipe' }).toString().trim();
+    return common.endsWith('/.git') ? common.slice(0, -5) : require('path').resolve(common, '..');
+  } catch {
+    console.error('  Not inside a git repository.\n');
+    process.exit(1);
+  }
+})();
 
 // ── Colors ────────────────────────────────────────────────────────────────────
 

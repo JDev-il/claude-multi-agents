@@ -17,7 +17,15 @@ const fs   = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const ROOT     = path.join(__dirname, '..');
+const ROOT     = (() => {
+  try {
+    const common = execSync('git rev-parse --git-common-dir', { stdio: 'pipe' }).toString().trim();
+    return common.endsWith('/.git') ? common.slice(0, -5) : require('path').resolve(common, '..');
+  } catch {
+    console.error('  Not inside a git repository.\n');
+    process.exit(1);
+  }
+})();
 const TRACKING = path.join(ROOT, '.scaffold', '.tracking.json');
 const BUILD    = path.join(ROOT, 'BUILD_STATE.md');
 
