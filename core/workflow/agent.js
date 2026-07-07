@@ -755,6 +755,17 @@ const main = async () => {
   let contextSection = '';
 
   let userSeedingContracts = false;
+  const outputModeIdx = await arrowSelect(
+    'Agent output mode for this session?',
+    [
+      { label: `${green('→')} Full output      ${dim('— see everything (default)')}` },
+      { label: `${green('→')} Insights only    ${dim('— phase narrations + important blocks')}` },
+      { label: `${green('→')} Silent           ${dim('— spinner + critical blocks only')}` },
+    ],
+    rl
+  );
+  const outputMode = ['full', 'insights', 'silent'][outputModeIdx];
+
   flowLoop: while (true) {
   userSeedingContracts = false; // reset each iteration
 
@@ -1723,17 +1734,6 @@ ${excludedUrls}
       resolve();
     }, 600);
   });
-
-  const outputModeIdx = await arrowSelect(
-    'Agent output mode for this session?',
-    [
-      { label: `${green('→')} Full output      ${dim('— see everything (default)')}` },
-      { label: `${green('→')} Insights only    ${dim('— phase narrations + important blocks')}` },
-      { label: `${green('→')} Silent           ${dim('— spinner + critical blocks only')}` },
-    ],
-    rl
-  );
-  const outputMode = ['full', 'insights', 'silent'][outputModeIdx];
 
   const permIdx = await arrowSelect(
     'Grant agent full permissions for this session?',
