@@ -146,7 +146,12 @@ the agent must:
    # then take the parent directory of that path - this is PROJECT_ROOT
    ```
    Store this as PROJECT_ROOT. All subsequent paths (`.scaffold/`, `BUILD_STATE.md`, `CONTRACTS.md`, etc.) resolve from PROJECT_ROOT, never from the worktree directory.
-2. Read `BUILD_STATE.md` at PROJECT_ROOT - understand what has been built
+2. Read `output_mode` from `.claude-scope` in the current worktree directory:
+   - `full`     — default, no restrictions on output
+   - `insights` — emit `▶ narration` lines before each phase only; suppress routine file read/write commentary
+   - `silent`   — emit only git operations, errors, and verification results; show `✢ working...` between phases
+   Store this as OUTPUT_MODE. Apply it consistently for the entire session.
+3. Read `BUILD_STATE.md` at PROJECT_ROOT - understand what has been built
 3. Check if `TASK.md` exists in the current directory
 4. If yes - read it and verify dependencies are met against BUILD_STATE.md
 5. If dependencies not met - surface what is missing and propose options
