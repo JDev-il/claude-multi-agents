@@ -1510,6 +1510,62 @@ Mark each step complete. Only proceed to the task below when all are checked.
     console.log(`  ${yellow('ℹ Remote setup required')} - agent will handle this first.\n`);
   }
 
+  // ── Defensive check: debris from prior failed launch ─────────────────────────
+
+  const agentBranchPrefix = `agent/${project}/${agent.toLowerCase()}/`;
+  let existingBranches = [];
+  try {
+    const branchOut = execSync(`git branch --list "${agentBranchPrefix}*"`, { cwd: ROOT, stdio: 'pipe' }).toString().trim();
+    existingBranches = branchOut ? branchOut.split('\n').map(b => b.trim()).filter(Boolean) : [];
+  } catch {}
+
+  const worktreeExists = fs.existsSync(worktreePath);
+
+  if (existingBranches.length > 0 || worktreeExists) {
+    console.log(`\n  ${yellow('⚠ Debris detected from a prior launch:')}\n`);
+    if (existingBranches.length > 0) {
+      existingBranches.forEach(b => console.log(`    ${dim('branch  :')} ${yellow(b)}`));
+    }
+    if (worktreeExists) {
+      console.log(`    ${dim('worktree:')} ${yellow(`worktrees/${worktreeName}`)}`);
+    }
+    console.log('');
+
+    const debrisIdx = await arrowSelect('How do you want to proceed?', [
+      { label: `${green('✓')} Clean up debris and continue` },
+      { label: `${yellow('→')} Skip cleanup and continue anyway` },
+      { label: `${red('✗')} Cancel` },
+    ], rl);
+
+    if (debrisIdx === 2) {
+      console.log(yellow('\n  Cancelled.\n'));
+      rl.close();
+      return;
+    }
+
+    if (debrisIdx === 0) {
+      // Remove worktree if it exists
+      if (worktreeExists) {
+        try {
+          execSync(`git worktree remove "${worktreePath}" --force`, { cwd: ROOT, stdio: 'pipe' });
+          console.log(`  ${green('✓')} Worktree removed`);
+        } catch (e) {
+          console.log(`  ${yellow('!')} Could not remove worktree - continuing`);
+        }
+      }
+      // Delete each stale branch
+      for (const staleBranch of existingBranches) {
+        try {
+          execSync(`git branch -D "${staleBranch}"`, { cwd: ROOT, stdio: 'pipe' });
+          console.log(`  ${green('✓')} Branch deleted: ${staleBranch}`);
+        } catch (e) {
+          console.log(`  ${yellow('!')} Could not delete branch ${staleBranch} - continuing`);
+        }
+      }
+      console.log('');
+    }
+  }
+
   // ── Create worktree ───────────────────────────────────────────────────────────
 
   try {
