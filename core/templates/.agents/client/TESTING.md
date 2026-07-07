@@ -181,6 +181,14 @@ Examples:
 This is mandatory. It is the only human-readable signal the user gets while
 the agent is working. Keep it specific and honest — not generic filler.
 
+### Output Mode
+
+Read `output_mode` from `.claude-scope` at session start. Honor it for the entire session:
+
+- `full`     — no restrictions, behave normally
+- `insights` — emit `▶ narration` lines before each phase; suppress routine file read/write commentary in between
+- `silent`   — emit only git operations, errors, and verification results; show `✢ working...` between phases, no other output
+
 ---
 
 ## Workflow
