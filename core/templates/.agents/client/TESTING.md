@@ -165,6 +165,24 @@ These apply to every testing task regardless of framework.
 
 ---
 
+## Progress Narration
+
+Before starting each major build phase, emit one plain-English status line:
+
+```
+▶ [Phase name] — [what is being built and why, one line]
+```
+
+Examples:
+- `▶ Exploring existing components — checking current patterns before writing anything`
+- `▶ Building UI primitives — Button, Badge, Card as presentational shells`
+- `▶ Validating output — running tsc and dev server to confirm zero errors`
+
+This is mandatory. It is the only human-readable signal the user gets while
+the agent is working. Keep it specific and honest — not generic filler.
+
+---
+
 ## Workflow
 
 ```
