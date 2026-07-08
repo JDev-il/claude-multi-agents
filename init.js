@@ -62,7 +62,7 @@ const {
 } = require('./lib/summary');
 
 const { StepMachine, BACK, CONTINUE, RESTART, runQuestions } = require('./lib/steps');
-const { buildStepDefs } = require('./lib/questions-flow');
+const { buildStepDefs, fwValue } = require('./lib/questions-flow');
 
 // ── Prompts ───────────────────────────────────────────────────────────────────
 
@@ -390,7 +390,7 @@ const main = async () => {
   const clientStyle          = answers.clientStyle || null;
   const useIntegratedBackend = answers.useIntegratedBackend || false;
   const backendFwObj         = answers.backendFwObj || null;
-  const backendFw            = backendFwObj ? backendFwObj.value    : null;
+  const backendFw            = backendFwObj ? fwValue(backendFwObj)    : null;
   const backendLang          = backendFwObj ? backendFwObj.language : null;
   const backendOrm           = answers.backendOrm || null;
   const backendAuth          = answers.backendAuth || null;
@@ -410,12 +410,12 @@ const main = async () => {
 
   console.log(`\n${bold('Review your configuration:')}\n`);
   summaryLine('Project',           projectName);
-  summaryLine('Client framework',  clientFw.value);
+  summaryLine('Client framework',  fwValue(clientFw));
   summaryLine('Client language',   clientLang);
   summaryLine('State management',  clientState);
   summaryLine('UI library',        clientUi);
   summaryLine('Styling',           clientStyle);
-  summaryLine('Backend type',      backendType === 'integrated' ? `${clientFw.value} integrated` : backendFw || '(skipped)');
+  summaryLine('Backend type',      backendType === 'integrated' ? `${fwValue(clientFw)} integrated` : backendFw || '(skipped)');
   if (backendType !== 'integrated') {
     summaryLine('Backend language',  backendLang);
     summaryLine('ORM',               backendOrm);
@@ -494,7 +494,7 @@ const main = async () => {
 
   writeConfig(path.join(ROOT, 'client', 'CLAUDE.md'), {
     PROJECT_NAME:      projectName,
-    FRAMEWORK:         clientFw.value,
+    FRAMEWORK:         fwValue(clientFw),
     FRAMEWORK_VERSION: clientFwVersion || '',
     LANGUAGE:          clientLang,
     STATE:             clientState,
@@ -508,7 +508,7 @@ const main = async () => {
     const scaffoldConfig = {
       projectName,
       client: {
-        framework:        clientFw.value,
+        framework:        fwValue(clientFw),
         frameworkVersion: clientFwVersion || '',
         language:         clientLang,
         state:            clientState,
@@ -574,7 +574,7 @@ const main = async () => {
       linuxPaths: ideChoice.linux?.paths || [],
     },
     client: {
-      framework: clientFw.value,
+      framework: fwValue(clientFw),
       language:  clientLang,
       state:     clientState,
       uiLibrary: clientUi,
@@ -637,10 +637,10 @@ const main = async () => {
   // ── BUILD_STATE.md ────────────────────────────────────────────────────────────
 
   const backendDisplay = backendType === 'integrated'
-    ? `${clientFw.value} integrated (API routes/SSR)`
+    ? `${fwValue(clientFw)} integrated (API routes/SSR)`
     : backendFw || 'Not configured';
 
-  const clientStack = [clientFw.value, clientLang, clientStyle, clientUi, clientState].filter(Boolean).join(' + ');
+  const clientStack = [fwValue(clientFw), clientLang, clientStyle, clientUi, clientState].filter(Boolean).join(' + ');
   const backendStack = backendType === 'separate'
     ? [backendFw, backendLang, backendOrm, backendAuth].filter(Boolean).join(' + ')
     : backendDisplay;
@@ -668,7 +668,7 @@ Backend : ${backendStack}
 
 ## Backend State
 ${backendType === 'integrated'
-  ? `Type: ${clientFw.value} integrated backend (API routes / SSR)
+  ? `Type: ${fwValue(clientFw)} integrated backend (API routes / SSR)
 - [ ] API routes - server-side endpoints
 - [ ] Auth - authentication strategy
 - [ ] DB - data layer if needed`
