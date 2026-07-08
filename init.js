@@ -38,7 +38,7 @@ const {
   ORM_OPTIONS,
   AUTH_OPTIONS,
   IDE_CANDIDATES,
-} = require('./lib/questions');
+} = require('./lib/data-config');
 
 const {
   expandWinPath,
