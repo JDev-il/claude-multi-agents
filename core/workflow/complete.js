@@ -557,19 +557,34 @@ const main = async () => {
     }
 
     separator();
-    console.log(`\n  ${bold('What to do next:')}`);
+    const boxWidth = 54;
+    const rev = (s) => `\x1b[7m${s}\x1b[27m`;
+    const pad = (s, w) => s + ' '.repeat(Math.max(0, w - s.length));
+
+    console.log('');
+    console.log('  ' + rev(' ' + pad(' What happens next', boxWidth) + ' '));
+    console.log('  ' + rev(' ' + pad('', boxWidth) + ' '));
 
     if (nextAgent) {
-      console.log(`\n  ${green('→')} ${bold(nextAgent)} ${dim('(' + nextScope + ')')}`);
-      console.log(`\n  ${cyan('npm run agent')}`);
-      console.log(`  ${dim('Select: ' + nextScope + ' → ' + nextAgent)}`);
+      console.log('  ' + rev(' ' + pad(`  -> Run: npm run agent`, boxWidth) + ' '));
+      console.log('  ' + rev(' ' + pad(`  -> Select: ${nextScope} -> ${nextAgent}`, boxWidth) + ' '));
     } else {
-      console.log(`\n  ${cyan('npm run agent')}`);
+      console.log('  ' + rev(' ' + pad(`  -> All agents complete - ready to deploy`, boxWidth) + ' '));
     }
+
+    console.log('  ' + rev(' ' + pad('', boxWidth) + ' '));
+    console.log('');
   } catch {
     separator();
-    console.log(`\n  ${bold('What to do next:')}\n`);
-    console.log(`  ${cyan('npm run agent')}`);
+    const boxWidth2 = 54;
+    const rev2 = (s) => `\x1b[7m${s}\x1b[27m`;
+    const pad2 = (s, w) => s + ' '.repeat(Math.max(0, w - s.length));
+    console.log('');
+    console.log('  ' + rev2(' ' + pad2(' What happens next', boxWidth2) + ' '));
+    console.log('  ' + rev2(' ' + pad2('', boxWidth2) + ' '));
+    console.log('  ' + rev2(' ' + pad2(`  -> Run: npm run agent`, boxWidth2) + ' '));
+    console.log('  ' + rev2(' ' + pad2('', boxWidth2) + ' '));
+    console.log('');
   }
 
   console.log('\n');
