@@ -420,7 +420,7 @@ const main = async () => {
   const clientUi             = answers.clientUi || null;
   const clientStyle          = answers.clientStyle || null;
   const useIntegratedBackend = answers.useIntegratedBackend || false;
-  const backendFwObj         = answers.backendFwObj || null;
+  const backendFwObj         = answers.backendFw || null;
   const backendFw            = backendFwObj ? fwValue(backendFwObj)    : null;
   const backendLang          = backendFwObj ? backendFwObj.language : null;
   const backendOrm           = answers.backendOrm || null;
