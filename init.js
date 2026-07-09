@@ -393,14 +393,19 @@ const main = async () => {
 
   // Activate blocks and resolve absolute step indices
   let absoluteStep = 0;
+  const blockEntries = [];
   for (const blockKey of blockOrder) {
     const block = BLOCK_CONFIG[blockKey];
     block.isActive = true;
+    let isFirstSeg = true;
     for (const [segKey, seg] of Object.entries(block)) {
       if (segKey === 'isActive' || typeof seg !== 'object' || !('step' in seg)) continue;
-      seg.absoluteStep = absoluteStep++;
+      seg.absoluteStep = absoluteStep;
+      if (isFirstSeg) { blockEntries.push(absoluteStep); isFirstSeg = false; }
+      absoluteStep++;
     }
   }
+  steps.blockEntries = blockEntries;
 
   separator();
 
