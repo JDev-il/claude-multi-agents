@@ -38,6 +38,8 @@ const {
   ORM_OPTIONS,
   AUTH_OPTIONS,
   IDE_CANDIDATES,
+  BLOCK_CONFIG,
+  INTENT_MAP,
 } = require('./lib/data-config');
 
 const {
@@ -371,6 +373,35 @@ const main = async () => {
     if (!projectName) console.log(yellow('  Project name is required.'));
   }
   steps.push(0, 'Project name', projectName);
+  separator();
+
+  // ── Intent selection ────────────────────────────────────────────────────────
+  const intentChoices = Object.entries(INTENT_MAP).map(([k, v]) => ({ label: v.label, value: k }));
+  const intentIdx = await arrowSelect('What would you like to build?', intentChoices);
+  const intentKey = intentChoices[intentIdx].value;
+  const intent    = INTENT_MAP[intentKey];
+
+  // Secondary prompt for fullstack order
+  let blockOrder = intent.blocks;
+  if (intentKey === 'fullstack') {
+    const orderIdx = await arrowSelect('Full-stack order?', [
+      { label: 'Client first, then backend' },
+      { label: 'Backend first, then client' },
+    ]);
+    blockOrder = orderIdx === 0 ? ['client', 'backend'] : ['backend', 'client'];
+  }
+
+  // Activate blocks and resolve absolute step indices
+  let absoluteStep = 0;
+  for (const blockKey of blockOrder) {
+    const block = BLOCK_CONFIG[blockKey];
+    block.isActive = true;
+    for (const [segKey, seg] of Object.entries(block)) {
+      if (segKey === 'isActive' || typeof seg !== 'object' || !('step' in seg)) continue;
+      seg.absoluteStep = absoluteStep++;
+    }
+  }
+
   separator();
 
   // Run all question steps with back-nav support
