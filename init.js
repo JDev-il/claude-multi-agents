@@ -376,6 +376,7 @@ const main = async () => {
   separator();
 
   // ── Intent selection ────────────────────────────────────────────────────────
+  rl.pause();
   const intentChoices = Object.entries(INTENT_MAP).map(([k, v]) => ({ label: v.label, value: k }));
   const intentIdx = await arrowSelect('What would you like to build?', intentChoices);
   const intentKey = intentChoices[intentIdx].value;
