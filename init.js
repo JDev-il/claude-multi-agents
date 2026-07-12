@@ -397,12 +397,19 @@ const main = async () => {
   for (const blockKey of blockOrder) {
     const block = BLOCK_CONFIG[blockKey];
     block.isActive = true;
-    let isFirstSeg = true;
+    let isBlockEntry = true;
     for (const [segKey, seg] of Object.entries(block)) {
-      if (segKey === 'isActive' || typeof seg !== 'object' || !('step' in seg)) continue;
+      if (segKey === 'isActive' || typeof seg !== 'object' || !('key' in seg)) continue;
       seg.absoluteStep = absoluteStep;
-      if (isFirstSeg) { blockEntries.push(absoluteStep); isFirstSeg = false; }
+      if (isBlockEntry) { blockEntries.push(absoluteStep); isBlockEntry = false; }
       absoluteStep++;
+      // Walk nested properties (framework sub-steps)
+      if (seg.properties) {
+        for (const prop of Object.values(seg.properties)) {
+          prop.absoluteStep = absoluteStep;
+          absoluteStep++;
+        }
+      }
     }
   }
   steps.blockEntries = blockEntries;
