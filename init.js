@@ -364,7 +364,6 @@ const main = async () => {
   // ── Step machine + question runner ──────────────────────────────────────────
 
   const steps    = new StepMachine();
-  const stepDefs = buildStepDefs(IDE_CANDIDATES);
 
   // Project name (free-text, outside the runner)
   let projectName = '';
@@ -407,6 +406,7 @@ const main = async () => {
     }
   }
   steps.blockEntries = blockEntries;
+  const stepDefs = buildStepDefs(IDE_CANDIDATES, blockOrder);
 
   // Prefetch versions for active blocks in background
   if (BLOCK_CONFIG.client.isActive) prefetchVersions(CLIENT_FRAMEWORKS);
