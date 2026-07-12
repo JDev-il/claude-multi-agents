@@ -24,3 +24,5 @@ node_modules/
 !core/templates/.frameworks/
 !core/templates/.frameworks/**
 package-lock.json
+.DS_Store
+.DS_Store
