@@ -29,7 +29,7 @@ const {
   CLIENT_FRAMEWORKS,
   BACKEND_FRAMEWORKS,
   FRAMEWORK_VERSION_FALLBACK,
-  fetchLatestVersions,
+  fetchLatestVersions, prefetchVersions,
   STATE_OPTIONS,
   UI_OPTIONS,
   STYLING_OPTIONS,
@@ -407,6 +407,9 @@ const main = async () => {
     }
   }
   steps.blockEntries = blockEntries;
+
+  // Prefetch versions for active blocks in background
+  if (BLOCK_CONFIG.client.isActive) prefetchVersions(CLIENT_FRAMEWORKS);
 
   separator();
 
