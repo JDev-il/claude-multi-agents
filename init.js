@@ -317,7 +317,7 @@ const main = async () => {
     console.log(dim('  To restart an agent:   ') + cyan('npm run restart'));
     console.log(dim('  To wipe everything:    ') + cyan('npm run reset') + '\n');
 
-    if (prompts && process.stdin.isTTY) {
+    if (prompts && process.stdout.isTTY) {
       const res = await prompts({
         type:    'select',
         name:    'value',
