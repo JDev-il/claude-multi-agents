@@ -146,15 +146,14 @@ the agent must:
    # then take the parent directory of that path - this is PROJECT_ROOT
    ```
    Store this as PROJECT_ROOT. All subsequent paths (`.scaffold/`, `BUILD_STATE.md`, `CONTRACTS.md`, etc.) resolve from PROJECT_ROOT, never from the worktree directory.
-2. Read `output_mode` from `.claude-scope` in the current worktree directory:
-   - `full` — default, no restrictions on output
-   - `insights` — three permitted outputs only:
-     1. Colored bold `▶` opener before each phase — color is defined per agent file
-     2. Colored bold `✔` after each phase — outcome in 10 words or fewer, stated as fact, no first-person narration
-     3. Colored bold `⚠` when action is blocked or a decision is required
-     No other text. No transitions. No reasoning. No read/write acknowledgements.
-   - `silent` — show `✢ working...` between phases; emit only `✔` git operations, errors, and verification results; no other output
-   Store this as OUTPUT_MODE. Apply it consistently for the entire session.
+2. Read `output_mode` from `.claude-scope` in the current worktree directory. Do this silently — before emitting any output whatsoever, including narration of this session start sequence. Store as OUTPUT_MODE and enforce immediately:
+   - `full` — no restrictions on output
+   - `insights` — hard contract for the entire session. Emit exactly: `Output mode: insights` then proceed. Only three output types are permitted — any other text is a violation:
+     1. Before each phase, output this exact string (replace placeholders): `\033[1;36m▶\033[0m [phase] — [what and why, one line]` (color per agent scope: cyan client, yellow backend `\033[1;33m`, red shared `\033[1;31m`)
+     2. After each phase, output this exact string (replace placeholder): `\033[1;32m✔\033[0m [result — outcome in 10 words or fewer, stated as fact, no first-person narration]`
+     3. When blocked or a decision is required, output this exact string: `\033[38;5;208m\033[1m⚠\033[0m [blocker or decision]`
+   - `silent` — emit exactly: `Output mode: silent` then proceed. Show `✢ working...` between phases; emit only `\033[1;32m✔\033[0m` git operations, errors, and verification results; no other output
+   All remaining session start steps execute silently under insights and silent modes.
 3. Read `BUILD_STATE.md` at PROJECT_ROOT - understand what has been built
 3. Check if `TASK.md` exists in the current directory
 4. If yes - read it and verify dependencies are met against BUILD_STATE.md
