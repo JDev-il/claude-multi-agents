@@ -575,3 +575,26 @@ Confirm: "Remote configured — proceeding with task."
 
 **Never begin task implementation until this flag is cleared.
 Never delete the flag on failure.**
+## Completed Task Protocol
+
+If `TASK.md` status is `COMPLETED` at session start, a previous task finished in this worktree.
+
+**Do not re-run completed work. Treat any new user input as a follow-on task.**
+
+### On session start with COMPLETED TASK.md
+
+1. Read `TASK.md` silently - note what was completed
+2. Read `.claude-scope` for output mode (already set - no action needed)
+3. Emit session confirmation per Output Mode Contract
+4. Output (insights/full modes): `✔ Previous task complete. Ready for follow-on work.`
+5. Wait for user input
+
+### On receiving follow-on task
+
+1. Treat it as a new task within the same scope and worktree
+2. Execute it fully per your agent mission and scope rules
+3. Append a new entry to TASK.md under a `## Follow-on Task` heading with status IN PROGRESS
+4. When complete, update status to COMPLETED and run `npm run complete`
+
+**Never begin implementation before confirming scope.
+Never touch files outside your assigned scope.**
