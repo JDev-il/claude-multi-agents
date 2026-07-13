@@ -147,9 +147,13 @@ the agent must:
    ```
    Store this as PROJECT_ROOT. All subsequent paths (`.scaffold/`, `BUILD_STATE.md`, `CONTRACTS.md`, etc.) resolve from PROJECT_ROOT, never from the worktree directory.
 2. Read `output_mode` from `.claude-scope` in the current worktree directory:
-   - `full`     — default, no restrictions on output
-   - `insights` — emit `▶ narration` lines before each phase only; suppress routine file read/write commentary
-   - `silent`   — emit only git operations, errors, and verification results; show `✢ working...` between phases
+   - `full` — default, no restrictions on output
+   - `insights` — three permitted outputs only:
+     1. Colored bold `▶` opener before each phase — color is defined per agent file
+     2. Colored bold `✔` after each phase — outcome in 10 words or fewer, stated as fact, no first-person narration
+     3. Colored bold `⚠` when action is blocked or a decision is required
+     No other text. No transitions. No reasoning. No read/write acknowledgements.
+   - `silent` — show `✢ working...` between phases; emit only `✔` git operations, errors, and verification results; no other output
    Store this as OUTPUT_MODE. Apply it consistently for the entire session.
 3. Read `BUILD_STATE.md` at PROJECT_ROOT - understand what has been built
 3. Check if `TASK.md` exists in the current directory

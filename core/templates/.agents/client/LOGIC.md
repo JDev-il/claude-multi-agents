@@ -215,9 +215,13 @@ the agent is working. Keep it specific and honest — not generic filler.
 
 Read `output_mode` from `.claude-scope` at session start. Honor it for the entire session:
 
-- `full`     — no restrictions, behave normally
-- `insights` — emit `▶ narration` lines before each phase; suppress routine file read/write commentary in between
-- `silent`   — emit only git operations, errors, and verification results; show `✢ working...` between phases, no other output
+- `full` — no restrictions, behave normally
+- `insights` — three permitted outputs only:
+  1. `\033[1;36m▶\033[0m [phase] — [what and why, one line]` before each phase
+  2. `\033[1;32m✔\033[0m [result]` after each phase — outcome in 10 words or fewer, stated as fact, no first-person narration
+  3. `\033[38;5;208m\033[1m⚠\033[0m [blocker or decision]` when action is blocked or a decision is required
+  No other text. No transitions. No reasoning. No read/write acknowledgements.
+- `silent` — show `✢ working...` between phases; emit only `\033[1;32m✔\033[0m` git operations, errors, and verification results; no other output
 
 ---
 
