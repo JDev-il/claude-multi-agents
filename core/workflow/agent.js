@@ -1064,6 +1064,51 @@ const main = async () => {
     if (activeChoice === 4) { continue agentLoop; }
   }
 
+  // COMPLETED gate
+  const completedSlot = tracking?.[project]?.[agent];
+  if (completedSlot?.status === 'COMPLETED') {
+    const sanitizedForWorktree = config.projectName.toLowerCase().replace(/\s+/g, '-');
+    const completedTimestamp   = completedSlot.branch ? completedSlot.branch.split('/')[3] : null;
+    const completedWorktreeName = completedTimestamp
+      ? `${project}-${sanitizedForWorktree}-${agent.toLowerCase()}-${completedTimestamp}`
+      : null;
+    const completedWorktreePath = completedWorktreeName
+      ? path.join(ROOT, 'worktrees', completedWorktreeName)
+      : null;
+    const worktreeExists = completedWorktreePath && fs.existsSync(completedWorktreePath);
+
+    separator();
+    console.log(`\n  ${bold(green('\u2713'))} ${bold(agent)} previously completed${completedSlot.completedAt ? ' on ' + new Date(completedSlot.completedAt).toLocaleDateString() : ''}.`);
+    if (worktreeExists) {
+      console.log(`  ${dim('Worktree')} : ${dim(completedWorktreePath)}\n`);
+    }
+
+    const completedOptions = worktreeExists
+      ? ['Continue in existing worktree', 'Start a new task', 'Pick a different agent']
+      : ['Start a new task', 'Pick a different agent'];
+
+    const completedChoice = await arrowSelect('What would you like to do?', completedOptions, rl);
+
+    if (worktreeExists) {
+      if (completedChoice === 0) {
+        openIDE(completedWorktreePath);
+        rl.close();
+        return;
+      }
+      if (completedChoice === 1) {
+        guards.clearTrackingSlot(tracking, project, agent, ROOT);
+        // fall through to fresh launch
+      }
+      if (completedChoice === 2) { continue agentLoop; }
+    } else {
+      if (completedChoice === 0) {
+        guards.clearTrackingSlot(tracking, project, agent, ROOT);
+        // fall through to fresh launch
+      }
+      if (completedChoice === 1) { continue agentLoop; }
+    }
+  }
+
   // MISSING gate
   const trackingSlot = tracking?.[project]?.[agent];
   if (trackingSlot?.status === 'MISSING') {
