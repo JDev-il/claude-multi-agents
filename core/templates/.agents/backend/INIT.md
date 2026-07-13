@@ -5,6 +5,19 @@
 
 ---
 
+## Output Mode Contract
+
+Before doing anything else, read `output_mode` from `.claude-scope` and store it as OUTPUT_MODE. This is a hard contract for the entire session — violation of it is an error:
+
+- `full` — no restrictions, behave normally
+- `insights` — exactly three output types are permitted. Any text outside these must not be emitted:
+  1. Before each phase, output this exact string (replace placeholders): `\033[1;33m▶\033[0m [phase] — [what and why, one line]`
+  2. After each phase completes, output this exact string (replace placeholder): `\033[1;32m✔\033[0m [result — outcome in 10 words or fewer, stated as fact, no first-person narration]`
+  3. When action is blocked or a decision is required, output this exact string (replace placeholder): `\033[38;5;208m\033[1m⚠\033[0m [blocker or decision]`
+- `silent` — show `✢ working...` between phases; emit only `\033[1;32m✔\033[0m` git operations, errors, and verification results; no other output
+
+Confirm OUTPUT_MODE by emitting exactly: `Output mode: [OUTPUT_MODE]` — then proceed.
+
 ## Mission
 
 Scaffold the entire backend architecture for this project. This agent owns
