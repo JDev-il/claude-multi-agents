@@ -760,6 +760,7 @@ const main = async () => {
 
   let project, agent, task, contractsNote;
   let timestamp, sanitizedName, worktreeName, branchName, worktreePath;
+  let resumeMode = false;
   let contextSection = '';
 
   let userSeedingContracts = false;
@@ -937,6 +938,7 @@ const main = async () => {
     agent = argAgent;
   } else {
   agentLoop: while (true) {
+    resumeMode = false;
     console.log('');
 
     // Select agent with back option
@@ -1091,9 +1093,9 @@ const main = async () => {
 
     if (worktreeExists) {
       if (completedChoice === 0) {
-        openIDE(completedWorktreePath);
-        rl.close();
-        return;
+        worktreePath = completedWorktreePath;
+        branchName   = completedSlot.branch;
+        resumeMode   = true;
       }
       if (completedChoice === 1) {
         guards.clearTrackingSlot(tracking, project, agent, ROOT);
@@ -1504,6 +1506,7 @@ Mark each step complete. Only proceed to the task below when all are checked.
 
   separator();
 
+  if (!resumeMode) {
   // ── Confirm ───────────────────────────────────────────────────────────────────
 
   timestamp     = Date.now();
@@ -1836,6 +1839,8 @@ ${excludedUrls}
       console.log(`  ${yellow('!')} Could not commit BUILD_STATE.md - commit manually if needed`);
     }
   }
+
+  } // end if (!resumeMode)
 
   // ── Session start selection ─────────────────────────────────────────────────
 
