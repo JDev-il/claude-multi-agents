@@ -289,17 +289,17 @@ const buildScopeOptions = () => {
   const bt = config.backend?.type;
   const options = [];
 
-  options.push({ name: 'client', label: 'client' });
+  options.push({ name: 'client', label: `Client    ${dim('— frontend UI, components, routing and state')}` });
 
   if (bt === 'integrated') {
-    options.push({ name: 'backend', label: 'backend' });
+    options.push({ name: 'backend', label: `Backend   ${dim('— server-side logic, API routes and data layer')}` });
   } else if (!bt) {
-    options.push({ name: 'backend', label: `backend   ${yellow('⚠ not configured')}`, needsConfig: true });
+    options.push({ name: 'backend', label: `Backend   ${yellow('⚠ not configured')}`, needsConfig: true });
   } else {
-    options.push({ name: 'backend', label: 'backend' });
+    options.push({ name: 'backend', label: `Backend   ${dim('— server-side logic, API routes and data layer')}` });
   }
 
-  options.push({ name: 'shared', label: 'shared' });
+  options.push({ name: 'shared', label: `Shared    ${dim('— contracts, types and cross-cutting concerns')}` });
 
   // CLOUD appears only when prerequisites are met
   const rawEntries  = parseBuildState();
@@ -787,7 +787,7 @@ const main = async () => {
     project = argScope;
   } else {
     console.log(`\n${bold('* Project scope:')}`);
-    const scopeIdx = await arrowSelect('Select scope', scopeOptions.map(s => ({ label: s.label || s.name })), rl);
+    const scopeIdx = await arrowSelect('Which part of your project do you want to work on?', scopeOptions.map(s => ({ label: s.label || s.name })), rl);
     selectedScope = scopeOptions[scopeIdx];
     project = selectedScope.name || selectedScope;
   }
