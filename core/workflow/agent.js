@@ -1650,7 +1650,7 @@ Mark each step complete. Only proceed to the task below when all are checked.
 `);
       process.exit(1);
     }
-    console.log(`  ${yellow('!')} Worktree may already exist - continuing.`);
+    console.log(`  ${yellow("!")} Worktree error: ${msg}`);
   }
 
   // ── Write .claude-scope ───────────────────────────────────────────────────────
