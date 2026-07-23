@@ -530,6 +530,7 @@ const main = async () => {
   const agentConfigSrc = path.join(CORE_DIR, '..', 'lib', 'agent-config.js');
   if (fs.existsSync(agentConfigSrc)) fs.copyFileSync(agentConfigSrc, path.join(WORKFLOW_DEST, 'agent-config.js'));
   console.log(`  ${green('✓')} Workflow scripts copied (.workflow/)`);
+  console.log(`  ${green('✓')} worktrees/ created`);
   try {
     const cliPkg = require('./package.json');
     fs.writeFileSync(path.join(WORKFLOW_DEST, '.version'), cliPkg.version, 'utf8');
@@ -591,6 +592,7 @@ const main = async () => {
     console.log(`  ${green('✓')} backend/CLAUDE.md configured`);
   }
 
+  fs.mkdirSync(path.join(ROOT, 'worktrees'), { recursive: true });
   ensureGitignore(ROOT, 'worktrees/');
   ensureGitignore(ROOT, '.scaffold/');
   ensureGitignore(ROOT, '.workflow/');
