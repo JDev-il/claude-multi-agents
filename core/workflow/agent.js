@@ -1545,8 +1545,8 @@ Mark each step complete. Only proceed to the task below when all are checked.
     return;
   }
 
-  break flowLoop;
-  } // end flowLoop
+
+  } // end if (!resumeMode)
   separator();
   console.log(`\n${bold('Setting up workspace...')}\n`);
 
@@ -1840,7 +1840,8 @@ ${excludedUrls}
     }
   }
 
-  } // end if (!resumeMode)
+  break flowLoop;
+  } // end flowLoop
 
   // ── Session start selection ─────────────────────────────────────────────────
 
