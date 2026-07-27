@@ -14,6 +14,7 @@ const fs                = require('fs');
 const path              = require('path');
 const { execSync, spawn } = require('child_process');
 const guards            = require('./guards');
+const preflight         = require('./preflight');
 const tasksHistory      = require('./tasks_history');
 const { resolveScope, findViolations } = require('./scope-utils');
 
@@ -505,6 +506,26 @@ const main = async () => {
   if (_agent) console.log(`  ${dim('Agent')}  : ${green(_agent)} ${dim('(' + _scope + ')')}`);
   if (_task)  console.log(`  ${dim('Task')}   : ${dim(_task)}`);
   console.log(`  ${dim('Branch')} : ${green(branchName)} merged into ${green('main')}\n`);
+
+  try {
+    preflight.writeStateSnapshot(ROOT, {
+      scope:     _scope,
+      agent:     _agent,
+      branch:    branchName,
+      decision:  'merged',
+      mergedAt:  new Date().toISOString(),
+    });
+    preflight.writeAuditEntry(ROOT, {
+      scope:              _scope,
+      agent:              _agent,
+      operation:          'merge',
+      commitsBehind:      0,
+      inScopeCount:       0,
+      conflictPrediction: false,
+      decision:           'merged',
+      source:             'auto',
+    });
+  } catch { /* non-fatal - state snapshot is best-effort at post-flight */ }
 
   // ── Derive next step from tracking ──────────────────────────────────────────
   const AGENT_ORDER = {
