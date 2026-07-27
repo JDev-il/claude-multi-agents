@@ -763,6 +763,7 @@ const main = async () => {
   let timestamp, sanitizedName, worktreeName, branchName, worktreePath;
   let intent = null;
   let resumeMode = false;
+  let preflightResult = null;
   let contextSection = '';
 
   let userSeedingContracts = false;
@@ -1105,30 +1106,32 @@ const main = async () => {
         ], rl);
         intent = intentIdx === 0 ? 'continuation' : 'correction';
 
-        const preflightResult = await preflight.assess({
+        preflightResult = await preflight.assess({
           ROOT, scope: project, agent, branchName: completedSlot.branch, intent
         });
 
-        preflight.writeAuditEntry(ROOT, {
-          scope:             project,
-          agent,
-          operation:         'pre-flight',
-          commitsBehind:     preflightResult.commitsBehind,
-          inScopeCount:      preflightResult.inScopeFiles.length,
-          conflictPrediction: preflightResult.conflictPrediction,
-          decision:          preflightResult.decision,
-          source:            'auto',
-        });
+        try {
+          preflight.writeAuditEntry(ROOT, {
+            scope:             project,
+            agent,
+            operation:         'pre-flight',
+            commitsBehind:     preflightResult.commitsBehind,
+            inScopeCount:      preflightResult.inScopeFiles.length,
+            conflictPrediction: preflightResult.conflictPrediction,
+            decision:          preflightResult.decision,
+            source:            'auto',
+          });
 
-        preflight.writeStateSnapshot(ROOT, {
-          scope:         project,
-          agent,
-          branch:        completedSlot.branch,
-          intent,
-          decision:      preflightResult.decision,
-          commitsBehind: preflightResult.commitsBehind,
-          inScopeFiles:  preflightResult.inScopeFiles,
-        });
+          preflight.writeStateSnapshot(ROOT, {
+            scope:         project,
+            agent,
+            branch:        completedSlot.branch,
+            intent,
+            decision:      preflightResult.decision,
+            commitsBehind: preflightResult.commitsBehind,
+            inScopeFiles:  preflightResult.inScopeFiles,
+          });
+        } catch { /* non-fatal - audit/snapshot is best-effort at pre-flight */ }
 
         if (preflightResult.decision === 'block') {
           separator();
@@ -1166,13 +1169,7 @@ const main = async () => {
           }
         }
 
-        if (preflightResult.decision === 'proceed_with_notice' && preflightResult.notice) {
-          const taskMdPath = path.join(completedWorktreePath, 'TASK.md');
-          if (fs.existsSync(taskMdPath)) {
-            const taskMd = fs.readFileSync(taskMdPath, 'utf8');
-            fs.writeFileSync(taskMdPath, taskMd + '\n\n' + preflightResult.notice, 'utf8');
-          }
-        }
+
       }
       if (completedChoice === 1) {
         guards.clearTrackingSlot(tracking, project, agent, ROOT);
@@ -1842,6 +1839,11 @@ ${excludedUrls}
     'utf8'
   );
   console.log(`  ${green('✓')} TASK.md written`);
+
+  if (resumeMode && preflightResult?.decision === 'proceed_with_notice' && preflightResult?.notice) {
+    fs.appendFileSync(path.join(worktreePath, 'TASK.md'), '\n\n' + preflightResult.notice, 'utf8');
+    console.log(`  ${green('✓')} Pre-flight notice appended to TASK.md`);
+  }
 
   // ── Write session to TASKS_HISTORY.md ────────────────────────────────────────
   tasksHistory.ensureHistoryFile(ROOT);
