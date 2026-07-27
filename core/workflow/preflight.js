@@ -158,7 +158,6 @@ const assess = ({ ROOT, scope, agent, branchName, intent }) => {
   };
 };
 
-module.exports = { assess };
 
 // ── Standalone CLI entry point ────────────────────────────────────────────────
 if (require.main === module) {
@@ -171,3 +170,50 @@ if (require.main === module) {
   const result = assess({ ROOT, scope, agent, branchName, intent });
   console.log(JSON.stringify(result, null, 2));
 }
+
+// ── Audit log ─────────────────────────────────────────────────────────────────
+
+/**
+ * Append one entry to .scaffold/git-audit.log
+ * Format: [timestamp] [scope/agent] [operation] [behind:N] [scope-impact:N] [conflicts:bool] [decision] [source:auto|user]
+ */
+const writeAuditEntry = (ROOT, { scope, agent, operation, commitsBehind, inScopeCount, conflictPrediction, decision, source = 'auto' }) => {
+  const logPath = path.join(ROOT, '.scaffold', 'git-audit.log');
+  const entry   = [
+    `[${new Date().toISOString()}]`,
+    `[${scope}/${agent}]`,
+    `[${operation}]`,
+    `[behind:${commitsBehind}]`,
+    `[scope-impact:${inScopeCount}]`,
+    `[conflicts:${conflictPrediction}]`,
+    `[decision:${decision}]`,
+    `[source:${source}]`,
+  ].join(' ') + '\n';
+  fs.appendFileSync(logPath, entry, 'utf8');
+};
+
+// ── State snapshot ────────────────────────────────────────────────────────────
+
+/**
+ * Write .scaffold/git-state.json — valid for one session only.
+ * Next pre-flight always reads fresh state.
+ */
+const writeStateSnapshot = (ROOT, snapshot) => {
+  const statePath = path.join(ROOT, '.scaffold', 'git-state.json');
+  fs.writeFileSync(statePath, JSON.stringify({ ...snapshot, writtenAt: new Date().toISOString() }, null, 2), 'utf8');
+};
+
+/**
+ * Read .scaffold/git-state.json — returns null if missing or corrupt.
+ */
+const readStateSnapshot = (ROOT) => {
+  const statePath = path.join(ROOT, '.scaffold', 'git-state.json');
+  if (!fs.existsSync(statePath)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(statePath, 'utf8'));
+  } catch {
+    return null;
+  }
+};
+
+module.exports = { assess, writeAuditEntry, writeStateSnapshot, readStateSnapshot };
