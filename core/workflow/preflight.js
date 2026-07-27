@@ -45,7 +45,7 @@ const git = (cmd, cwd) => {
  */
 const assess = ({ ROOT, scope, agent, branchName, intent }) => {
   // ── Query 1: divergence ───────────────────────────────────────────────────
-  const behindRaw    = git(`git rev-list main..${branchName} --count`, ROOT);
+  const behindRaw    = git(`git rev-list ${branchName}..main --count`, ROOT);
   const commitsBehind = parseInt(behindRaw, 10) || 0;
 
   if (commitsBehind === 0) {
