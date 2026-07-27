@@ -760,6 +760,7 @@ const main = async () => {
 
   let project, agent, task, contractsNote;
   let timestamp, sanitizedName, worktreeName, branchName, worktreePath;
+  let intent = null;
   let resumeMode = false;
   let contextSection = '';
 
@@ -1096,6 +1097,12 @@ const main = async () => {
         worktreePath = completedWorktreePath;
         branchName   = completedSlot.branch;
         resumeMode   = true;
+
+        const intentIdx = await arrowSelect('What is the intent of this session?', [
+          { label: 'Continue — add more work to existing scope' },
+          { label: 'Correct — fix something the agent built wrong' },
+        ], rl);
+        intent = intentIdx === 0 ? 'continuation' : 'correction';
       }
       if (completedChoice === 1) {
         guards.clearTrackingSlot(tracking, project, agent, ROOT);
