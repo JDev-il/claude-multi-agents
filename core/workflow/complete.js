@@ -15,6 +15,7 @@ const path              = require('path');
 const { execSync, spawn } = require('child_process');
 const guards            = require('./guards');
 const tasksHistory      = require('./tasks_history');
+const { resolveScope, findViolations } = require('./scope-utils');
 
 // ── Colors ────────────────────────────────────────────────────────────────────
 
@@ -222,34 +223,12 @@ const main = async () => {
     const scopeMeta   = JSON.parse(fs.readFileSync(scopeJsonPath, 'utf8'));
     const scopePolicy = JSON.parse(fs.readFileSync(scopePolicyPath, 'utf8'));
 
-    const policyScope = scopePolicy[scopeMeta.policy];
-    const agentKey    = scopeMeta.agent && scopeMeta.agent.toUpperCase();
-    const override        = policyScope && policyScope.agentOverrides && policyScope.agentOverrides[agentKey];
-    const scaffoldedFlag  = (config.scaffolded || {})[scopeMeta.scope];
-    const overrideActive  = override && (!override.onlyBeforeScaffolded || !scaffoldedFlag);
-    const allowed         = (overrideActive && override.allowed) || (policyScope && policyScope.allowed) || [];
-    const blocked     = (policyScope && policyScope.blocked) || [];
+    const { allowed, blocked } = resolveScope(scopePolicy, scopeMeta.scope, scopeMeta.agent, config.scaffolded);
 
     const changedFiles = execSync('git diff --name-only main...HEAD', { cwd: worktreePath, stdio: 'pipe' })
       .toString().trim().split('\n').filter(Boolean);
 
-    const matchesGlob = (file, pat) => {
-      if (pat.endsWith('/**')) return file.startsWith(pat.slice(0, -3));
-      if (pat.includes('*')) {
-        const re = pat.replace(/[.+^${}()|[\]\\]/g, '\\$&')
-                      .replace(/\*\*/g, 'DOUBLESTAR')
-                      .replace(/\*/g, '[^/]*')
-                      .replace(/DOUBLESTAR/g, '.*');
-        return new RegExp('^' + re + '$').test(file);
-      }
-      return file === pat;
-    };
-
-    const violations = changedFiles.filter(file => {
-      const isAllowed = allowed.some(pat => matchesGlob(file, pat));
-      const isBlocked = blocked.some(pat => matchesGlob(file, pat));
-      return !isAllowed || isBlocked;
-    });
+    const violations = findViolations(changedFiles, allowed, blocked);
 
     if (violations.length > 0) {
       console.log('\n' + red('  ✗ Scope violation - merge blocked.'));
