@@ -1657,6 +1657,7 @@ Mark each step complete. Only proceed to the task below when all are checked.
 
   // ── Defensive check: debris from prior failed launch ─────────────────────────
 
+  if (!resumeMode) {
   const agentBranchPrefix = `agent/${project}/${agent.toLowerCase()}/`;
   let existingBranches = [];
   try {
@@ -1710,6 +1711,7 @@ Mark each step complete. Only proceed to the task below when all are checked.
       console.log('');
     }
   }
+  } // end if (!resumeMode) debris check
 
   // ── Create worktree ───────────────────────────────────────────────────────────
 
