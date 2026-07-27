@@ -14,6 +14,7 @@ const path         = require('path');
 const { execSync } = require('child_process');
 const guards       = require('./guards');
 const tasksHistory = require('./tasks_history');
+const preflight  = require('./preflight');
 const { AGENTS, AGENT_DESCRIPTIONS, AGENT_TASK_SUFFIX, SCAFFOLD_REQUIRED, CONTRACTS_REQUIRED, AGENT_PREREQUISITES, DOD_ITEMS, AGENT_QUESTIONS } = require('./agent-config');
 
 // ── Prompts (arrow-key navigation) ───────────────────────────────────────────
@@ -1103,6 +1104,75 @@ const main = async () => {
           { label: 'Correct — fix something the agent built wrong' },
         ], rl);
         intent = intentIdx === 0 ? 'continuation' : 'correction';
+
+        const preflightResult = await preflight.assess({
+          ROOT, scope: project, agent, branchName: completedSlot.branch, intent
+        });
+
+        preflight.writeAuditEntry(ROOT, {
+          scope:             project,
+          agent,
+          operation:         'pre-flight',
+          commitsBehind:     preflightResult.commitsBehind,
+          inScopeCount:      preflightResult.inScopeFiles.length,
+          conflictPrediction: preflightResult.conflictPrediction,
+          decision:          preflightResult.decision,
+          source:            'auto',
+        });
+
+        preflight.writeStateSnapshot(ROOT, {
+          scope:         project,
+          agent,
+          branch:        completedSlot.branch,
+          intent,
+          decision:      preflightResult.decision,
+          commitsBehind: preflightResult.commitsBehind,
+          inScopeFiles:  preflightResult.inScopeFiles,
+        });
+
+        if (preflightResult.decision === 'block') {
+          separator();
+          console.log('\n  ' + red('\u2716 Rebase would produce conflicts.'));
+          console.log(dim('  Resolve manually before re-entering this session:\n'));
+          console.log(dim('    1. cd ' + completedWorktreePath));
+          console.log(dim('    2. git rebase main'));
+          console.log(dim('    3. resolve conflicts'));
+          console.log(dim('    4. git rebase --continue'));
+          console.log(dim('    5. re-run npm run agent\n'));
+          rl.close();
+          return;
+        }
+
+        if (preflightResult.decision === 'escalate') {
+          separator();
+          console.log('\n  ' + yellow('\u26A0 Main has moved forward ' + preflightResult.commitsBehind + ' commit' + (preflightResult.commitsBehind === 1 ? '' : 's') + '.'));
+          if (preflightResult.inScopeFiles.length > 0) {
+            console.log(dim('  Files in your scope were updated:'));
+            preflightResult.inScopeFiles.forEach(f => console.log(dim('    · ' + f)));
+          }
+          if (preflightResult.escalationReason) {
+            console.log(dim('  Reason: ' + preflightResult.escalationReason));
+          }
+          console.log('');
+          const escalateIdx = await arrowSelect('How would you like to proceed?', [
+            { label: 'Rebase and proceed (system recommendation)' },
+            { label: 'Start fresh on a new branch' },
+            { label: 'Cancel' },
+          ], rl);
+          if (escalateIdx === 2) { rl.close(); return; }
+          if (escalateIdx === 1) {
+            resumeMode = false;
+            guards.clearTrackingSlot(tracking, project, agent, ROOT);
+          }
+        }
+
+        if (preflightResult.decision === 'proceed_with_notice' && preflightResult.notice) {
+          const taskMdPath = path.join(completedWorktreePath, 'TASK.md');
+          if (fs.existsSync(taskMdPath)) {
+            const taskMd = fs.readFileSync(taskMdPath, 'utf8');
+            fs.writeFileSync(taskMdPath, taskMd + '\n\n' + preflightResult.notice, 'utf8');
+          }
+        }
       }
       if (completedChoice === 1) {
         guards.clearTrackingSlot(tracking, project, agent, ROOT);
