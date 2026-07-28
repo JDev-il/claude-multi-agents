@@ -1136,12 +1136,41 @@ const main = async () => {
         if (preflightResult.decision === 'block') {
           separator();
           console.log('\n  ' + red('\u2716 Rebase would produce conflicts.'));
-          console.log(dim('  Resolve manually before re-entering this session:\n'));
+          if (preflightResult.inScopeFiles.length > 0) {
+            console.log(dim('  Files in your scope were updated:'));
+            preflightResult.inScopeFiles.forEach(f => console.log(dim('    · ' + f)));
+          }
+          console.log(dim('  Manual remediation:\n'));
           console.log(dim('    1. cd ' + completedWorktreePath));
           console.log(dim('    2. git rebase main'));
           console.log(dim('    3. resolve conflicts'));
           console.log(dim('    4. git rebase --continue'));
           console.log(dim('    5. re-run npm run agent\n'));
+
+          if (config.trajectory === 'multi-agent-driven-orchestration') {
+            const blockIdx = await arrowSelect('What would you like to do?', [
+              { label: 'Open worktree in IDE' },
+              { label: 'Cancel to agent selector' },
+              { label: 'Exit' },
+            ], rl);
+
+            if (blockIdx === 0) {
+              // Preflight predicted real conflicts - nothing further to do
+              // after opening. The session-start flow below assumes a clean
+              // worktree and shouldn't run against this one.
+              const openedIDE = openIDE(completedWorktreePath);
+              if (openedIDE) console.log(`  ${green('✓')} ${openedIDE} opened`);
+              else console.log(`  ${yellow('!')} Could not open IDE - open manually at: ${dim(completedWorktreePath)}`);
+              rl.close();
+              return;
+            }
+            if (blockIdx === 1) { continue agentLoop; }
+            rl.close();
+            return;
+          }
+
+          // Shared Orchestration: untested trajectory (memory #19) - keep
+          // existing hard-exit behavior unchanged, no new menu here.
           rl.close();
           return;
         }
