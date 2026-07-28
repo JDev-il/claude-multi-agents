@@ -144,7 +144,7 @@ const assess = ({ ROOT, scope, agent, branchName, intent }) => {
     `Main moved forward ${commitsBehind} commit${commitsBehind === 1 ? '' : 's'} since this session last ran.`,
     `The following file${inScopeFiles.length === 1 ? '' : 's'} in your scope were updated:`,
     ...inScopeFiles.map(f => `- ${f}`),
-    `Your worktree has been rebased onto main. Review changes before proceeding.`,
+    `These changes exist on main but have NOT been automatically synced into your worktree — run 'git rebase main' manually before continuing.`,
   ].join('\n');
 
   return {
