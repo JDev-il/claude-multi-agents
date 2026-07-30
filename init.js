@@ -531,9 +531,19 @@ const main = async () => {
   if (fs.existsSync(agentConfigSrc)) fs.copyFileSync(agentConfigSrc, path.join(WORKFLOW_DEST, 'agent-config.js'));
   console.log(`  ${green('✓')} Workflow scripts copied (.workflow/)`);
   console.log(`  ${green('✓')} worktrees/ created`);
+  let workflowManifest = null;
   try {
     const cliPkg = require('./package.json');
     fs.writeFileSync(path.join(WORKFLOW_DEST, '.version'), cliPkg.version, 'utf8');
+    const manifestFiles = {};
+    for (const f of fs.readdirSync(WORKFLOW_SRC)) {
+      if (!f.endsWith('.js')) continue;
+      const hash = require('crypto').createHash('sha256')
+        .update(fs.readFileSync(path.join(WORKFLOW_SRC, f)))
+        .digest('hex');
+      manifestFiles[f] = { hash: `sha256:${hash}` };
+    }
+    workflowManifest = { packageVersion: cliPkg.version, files: manifestFiles };
   } catch { /* best-effort */ }
 
   writeConfig(path.join(ROOT, 'CLAUDE.md'), { PROJECT_NAME: projectName, PROJECT_ROOT: projectName });
@@ -643,6 +653,7 @@ const main = async () => {
       client:  false,
       backend: false,
     },
+    workflowManifest: workflowManifest || { packageVersion: null, files: {} },
   };
 
   fs.writeFileSync(path.join(RUNTIME_DIR, '.config.json'), JSON.stringify(config, null, 2), 'utf8');

@@ -337,6 +337,55 @@ async function sync(opts = {}) {
     }
   }
 
+  // Check 7 - .workflow/ staleness vs installed package (report-only, no auto-apply)
+  try {
+    const configPath = path.join(ROOT, '.scaffold', '.config.json');
+    if (fs.existsSync(configPath)) {
+      const scaffoldCfg = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      const manifest = scaffoldCfg.workflowManifest;
+      const resolveInstalledPkgRoot = () => {
+        const localPkg = path.join(ROOT, 'node_modules', 'multi-agents-cli');
+        if (fs.existsSync(path.join(localPkg, 'package.json'))) return localPkg;
+        try {
+          const globalRoot = execSync('npm root -g', { stdio: 'pipe', encoding: 'utf8' }).trim();
+          const globalPkg = path.join(globalRoot, 'multi-agents-cli');
+          if (fs.existsSync(path.join(globalPkg, 'package.json'))) return globalPkg;
+        } catch {}
+        return null;
+      };
+      const pkgRoot = resolveInstalledPkgRoot();
+      if (manifest && manifest.packageVersion && pkgRoot) {
+        const installedPkg = JSON.parse(fs.readFileSync(path.join(pkgRoot, 'package.json'), 'utf8'));
+        if (installedPkg.version !== manifest.packageVersion) {
+          const installedWorkflowDir = path.join(pkgRoot, 'core', 'workflow');
+          const localWorkflowDir = path.join(ROOT, '.workflow');
+          const sha256 = (buf) => require('crypto').createHash('sha256').update(buf).digest('hex');
+          const updatable = [];
+          const diverged = [];
+          for (const [file, meta] of Object.entries(manifest.files || {})) {
+            const localPath = path.join(localWorkflowDir, file);
+            const installedPath = path.join(installedWorkflowDir, file);
+            if (!fs.existsSync(localPath) || !fs.existsSync(installedPath)) continue;
+            const baselineHash = (meta.hash || '').replace('sha256:', '');
+            const localHash = sha256(fs.readFileSync(localPath));
+            const installedHash = sha256(fs.readFileSync(installedPath));
+            if (installedHash === baselineHash) continue;
+            if (localHash === baselineHash) updatable.push(file);
+            else diverged.push(file);
+          }
+          if (updatable.length || diverged.length) {
+            let msg = `.workflow/ behind installed multi-agents-cli@${installedPkg.version} (scaffolded on ${manifest.packageVersion}).`;
+            if (updatable.length) msg += ` ${updatable.length} file(s) safe to update: ${updatable.join(', ')}.`;
+            if (diverged.length) msg += ` ${diverged.length} file(s) hand-edited, needs manual reconciliation: ${diverged.join(', ')}.`;
+            decisions.push(msg);
+          }
+        }
+      }
+    }
+  } catch (e) {
+    decisions.push(`workflow staleness check failed - ${e.message}`);
+  }
+
   const clean = !actions.length && !decisions.length && !orphans.length;
   if (clean) { if (mode === 'standalone') console.log(green('  \u2713 state in sync')); return; }
 
