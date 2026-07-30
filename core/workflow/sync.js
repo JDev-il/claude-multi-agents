@@ -368,10 +368,10 @@ async function sync(opts = {}) {
             if (!fs.existsSync(localPath) || !fs.existsSync(installedPath)) continue;
             const baselineHash = (meta.hash || '').replace('sha256:', '');
             const localHash = sha256(fs.readFileSync(localPath));
-            const installedHash = sha256(fs.readFileSync(installedPath));
-            if (installedHash === baselineHash) continue;
-            if (localHash === baselineHash) updatable.push(file);
-            else diverged.push(file);
+            const localDiverged = localHash !== baselineHash;
+            const installedChanged = sha256(fs.readFileSync(installedPath)) !== baselineHash;
+            if (localDiverged) diverged.push(file);
+            else if (installedChanged) updatable.push(file);
           }
           if (updatable.length || diverged.length) {
             let msg = `.workflow/ behind installed multi-agents-cli@${installedPkg.version} (scaffolded on ${manifest.packageVersion}).`;
