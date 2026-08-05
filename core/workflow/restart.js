@@ -140,6 +140,21 @@ const arrowSelect = async (message, choices) => {
 };
 
 // ── Wipe a single agent slot ──────────────────────────────────────────────────
+const readTrackingFresh = () => {
+  try {
+    return fs.existsSync(TRACKING_PATH)
+      ? JSON.parse(fs.readFileSync(TRACKING_PATH, 'utf8'))
+      : {};
+  } catch { return {}; }
+};
+
+const wipeTrackingSlot = (scope, agent) => {
+  const fresh = readTrackingFresh();
+  if (!fresh[scope]) fresh[scope] = {};
+  fresh[scope][agent] = { branch: null, timestamp: null, launchedAt: null, status: null, missingCount: 0, worktreePath: null };
+  fs.writeFileSync(TRACKING_PATH, JSON.stringify(fresh, null, 2), 'utf8');
+};
+
 const wipeAgent = ({ scope, agent, branch, worktreePath }) => {
   try { execSync(`git worktree remove "${worktreePath}" --force`, { cwd: ROOT, stdio: 'pipe' }); } catch {}
   try { execSync(`git branch -D ${branch}`, { cwd: ROOT, stdio: 'pipe' }); } catch {}
@@ -222,10 +237,7 @@ const wipeAgent = ({ scope, agent, branch, worktreePath }) => {
     );
   } catch {}
 
-  if (tracking[scope]?.[agent]) {
-    tracking[scope][agent] = { branch: null, timestamp: null, launchedAt: null, status: null, missingCount: 0, worktreePath: null };
-    fs.writeFileSync(TRACKING_PATH, JSON.stringify(tracking, null, 2), 'utf8');
-  }
+  wipeTrackingSlot(scope, agent);
   console.log(`  ${green('✓')} ${agent} wiped`);
 };
 
@@ -269,7 +281,7 @@ const main = async () => {
   const { scope, agent, branch, worktreePath } = candidate;
   const isInitAgent = (INIT_AGENTS[scope] || []).includes(agent);
   const deps        = (DEPENDENCIES[scope] || {})[agent] || [];
-  const activeDeps  = deps.filter(dep => tracking[scope]?.[dep]?.branch);
+  const activeDeps  = deps.filter(dep => readTrackingFresh()[scope]?.[dep]?.branch);
 
   // ── Show agent info ───────────────────────────────────────────────────────
   sep();
@@ -313,9 +325,12 @@ const main = async () => {
   sep();
   console.log(`\n  ${bold('Wiping')} ${cyan(agent)}...\n`);
 
-  const depsToWipe = isInitAgent ? deps : activeDeps;
+  const preWipeTracking = readTrackingFresh();
+  const depsToWipe = isInitAgent
+    ? deps
+    : deps.filter(dep => preWipeTracking[scope]?.[dep]?.branch);
   for (const dep of depsToWipe) {
-    const d  = tracking[scope]?.[dep];
+    const d  = preWipeTracking[scope]?.[dep];
     const wt = d?.branch ? getWorktrees().find(w => w.branch === d.branch) : null;
     if (d?.branch) wipeAgent({ scope, agent: dep, branch: d.branch, worktreePath: d.worktreePath || wt?.path });
   }
