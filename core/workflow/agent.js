@@ -1010,8 +1010,9 @@ const main = async () => {
       if (warningIdx === 1) continue agentLoop;
     }
 
+  const freshTrackingActive = guards.loadTracking(ROOT, config);
     // Agent already active - decisional block
-  const { active, slot: activeSlot } = guards.checkAgentActive(tracking, project, agent);
+  const { active, slot: activeSlot } = guards.checkAgentActive(freshTrackingActive, project, agent);
   if (active) {
     // Read task from TASK.md if available
     let activeTask = activeSlot.branch;
@@ -1071,7 +1072,8 @@ const main = async () => {
   }
 
   // COMPLETED gate
-  const completedSlot = tracking?.[project]?.[agent];
+  const freshTrackingCompleted = guards.loadTracking(ROOT, config);
+  const completedSlot = freshTrackingCompleted?.[project]?.[agent];
   if (completedSlot?.status === 'COMPLETED') {
     const sanitizedForWorktree = config.projectName.toLowerCase().replace(/\s+/g, '-');
     const completedTimestamp   = completedSlot.branch ? completedSlot.branch.split('/')[3] : null;
