@@ -1217,14 +1217,15 @@ const main = async () => {
     }
   }
 
+  const freshTrackingMissing = guards.loadTracking(ROOT, config);
   // MISSING gate
-  const trackingSlot = tracking?.[project]?.[agent];
+  const trackingSlot = freshTrackingMissing?.[project]?.[agent];
   if (trackingSlot?.status === 'MISSING') {
     const gateResult = await guards.runMissingGate({
       scope:   project,
       agent,
       slot:    trackingSlot,
-      tracking,
+      tracking: freshTrackingMissing,
       config,
       ROOT,
       ask,
