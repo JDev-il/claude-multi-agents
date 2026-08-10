@@ -962,11 +962,12 @@ const main = async () => {
       if (reqs.every(r => completedAgents.includes(r))) { recommendedAgent = a; break; }
     }
 
+    const freshTracking = guards.loadTracking(ROOT, config);
     const agentChoices = [
       ...agentOptions.map(a => {
         const desc      = dim(`  ${AGENT_DESCRIPTIONS[project]?.[a] || ''}`);
         const completed = completedAgents.includes(a);
-        const isActive  = tracking?.[project]?.[a]?.status === 'ACTIVE';
+        const isActive  = freshTracking?.[project]?.[a]?.status === 'ACTIVE';
         const isNext    = a === recommendedAgent && !isActive;
         const indicator = completed ? green('[✓]') : isActive ? yellow('[▶]') : isNext ? cyan(' → ') : dim('[ ]');
         const label     = completed ? dim(a) : isActive ? yellow(bold(a)) : isNext ? bold(a) : a;
@@ -982,7 +983,7 @@ const main = async () => {
     contractsNote = '';
 
     // ── Check for OTHER active agents in same scope ───────────────────────────
-    const otherActiveInScope = Object.entries(tracking?.[project] || {})
+    const otherActiveInScope = Object.entries(freshTracking?.[project] || {})
       .filter(([a, data]) => a !== agent && data?.status === 'ACTIVE');
 
     if (otherActiveInScope.length > 0) {
