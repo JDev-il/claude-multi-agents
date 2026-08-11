@@ -320,8 +320,12 @@ const displayProjectStatus = (entries, contracts) => {
   const renderScope = (scope) => {
     const all = scopeEntries(scope);
     if (all.length === 0) return dim('○ not started');
-    const completed  = all.filter(e => e.status === 'COMPLETED').map(e => e.agent);
-    const inProgress = all.filter(e => e.status === 'IN PROGRESS').map(e => e.agent);
+    // Dedup: keep only the latest entry per agent (entries are in file order, so last write wins)
+    const latestByAgent = new Map();
+    for (const e of all) latestByAgent.set(e.agent, e);
+    const deduped = Array.from(latestByAgent.values());
+    const completed  = deduped.filter(e => e.status === 'COMPLETED').map(e => e.agent);
+    const inProgress = deduped.filter(e => e.status === 'IN PROGRESS').map(e => e.agent);
     const parts = [];
     if (completed.length)  parts.push(green(completed.join(', ') + ' ✓'));
     if (inProgress.length) parts.push(yellow(inProgress.join(', ') + ' …'));

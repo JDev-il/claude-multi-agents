@@ -238,6 +238,26 @@ const wipeAgent = ({ scope, agent, branch, worktreePath }) => {
   } catch (e) { console.log(yellow(`  ! commit of scope removal failed for ${scope}/${agent}: ${(e.stderr || e.message || '').toString().trim()}`)); }
 
   wipeTrackingSlot(scope, agent);
+
+  // Reconcile BUILD_STATE.md checklist so wiped agents no longer show as done
+  try {
+    const buildStatePath = require('path').join(ROOT, 'BUILD_STATE.md');
+    if (fs.existsSync(buildStatePath)) {
+      let bs = fs.readFileSync(buildStatePath, 'utf8');
+      const scopeHeaderLabel = scope.charAt(0).toUpperCase() + scope.slice(1);
+      const sectionPattern = new RegExp(`(## ${scopeHeaderLabel} State\\n)([\\s\\S]*?)(?=\\n## |$)`);
+      const sectionMatch = bs.match(sectionPattern);
+      if (sectionMatch) {
+        const checklistPattern = new RegExp(`^(- \\[)[x ](\\] ${agent}\\b)`, 'm');
+        if (checklistPattern.test(sectionMatch[2])) {
+          const updatedSection = sectionMatch[2].replace(checklistPattern, '$1 $2');
+          bs = bs.slice(0, sectionMatch.index) + sectionMatch[1] + updatedSection + bs.slice(sectionMatch.index + sectionMatch[0].length);
+          fs.writeFileSync(buildStatePath, bs, 'utf8');
+        }
+      }
+    }
+  } catch (e) { console.log(yellow(`  ! BUILD_STATE.md reconciliation failed for ${scope}/${agent}: ${(e.stderr || e.message || '').toString().trim()}`)); }
+
   console.log(`  ${green('✓')} ${agent} wiped`);
 };
 
