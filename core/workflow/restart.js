@@ -156,9 +156,9 @@ const wipeTrackingSlot = (scope, agent) => {
 };
 
 const wipeAgent = ({ scope, agent, branch, worktreePath }) => {
-  try { execSync(`git worktree remove "${worktreePath}" --force`, { cwd: ROOT, stdio: 'pipe' }); } catch {}
-  try { execSync(`git branch -D ${branch}`, { cwd: ROOT, stdio: 'pipe' }); } catch {}
-  try { execSync(`git push origin --delete ${branch}`, { cwd: ROOT, stdio: 'pipe' }); } catch {}
+  try { execSync(`git worktree remove "${worktreePath}" --force`, { cwd: ROOT, stdio: 'pipe' }); } catch (e) { console.log(yellow(`  ! worktree remove failed for ${agent}: ${(e.stderr || e.message || '').toString().trim()}`)); }
+  try { execSync(`git branch -D ${branch}`, { cwd: ROOT, stdio: 'pipe' }); } catch (e) { console.log(yellow(`  ! local branch delete failed for ${branch}: ${(e.stderr || e.message || '').toString().trim()}`)); }
+  try { execSync(`git push origin --delete ${branch}`, { cwd: ROOT, stdio: 'pipe' }); } catch (e) { console.log(yellow(`  ! remote branch delete failed for ${branch}: ${(e.stderr || e.message || '').toString().trim()}`)); }
 
   // If scope folder has agent-built content on main, remove it so new branch starts clean
   // Use filesystem truth, not tracking status (tracking may already be cleared by prior restart)
@@ -235,7 +235,7 @@ const wipeAgent = ({ scope, agent, branch, worktreePath }) => {
       `git commit --no-gpg-sign --no-verify -m "chore: remove ${scope} scope content for restart"`,
       { cwd: ROOT, stdio: 'pipe' }
     );
-  } catch {}
+  } catch (e) { console.log(yellow(`  ! commit of scope removal failed for ${scope}/${agent}: ${(e.stderr || e.message || '').toString().trim()}`)); }
 
   wipeTrackingSlot(scope, agent);
   console.log(`  ${green('✓')} ${agent} wiped`);
