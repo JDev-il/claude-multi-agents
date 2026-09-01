@@ -1585,7 +1585,10 @@ Mark each step complete. Only proceed to the task below when all are checked.
 
         // TASKS_HISTORY
         tasksHistory.ensureHistoryFile(ROOT);
-        tasksHistory.writeSessionEntry(ROOT, { scope: 'backend', agent: 'INIT', branch: beBranchName, task: beTask, launchedAt: new Date().toISOString() });
+        const beHistoryOk = tasksHistory.writeSessionEntry(ROOT, { scope: 'backend', agent: 'INIT', branch: beBranchName, task: beTask, launchedAt: new Date().toISOString() });
+        if (!beHistoryOk) {
+          console.log(yellow('  ! TASKS_HISTORY.md session entry failed to write (backend/INIT) — continuing'));
+        }
 
         console.log(`  ${green('✓')} Backend/INIT worktree created: worktrees/${beWorktreeName}`);
 
@@ -1884,14 +1887,18 @@ ${excludedUrls}
 
   // ── Write session to TASKS_HISTORY.md ────────────────────────────────────────
   tasksHistory.ensureHistoryFile(ROOT);
-  tasksHistory.writeSessionEntry(ROOT, {
+  const historyOk = tasksHistory.writeSessionEntry(ROOT, {
     scope:      project,
     agent,
     branch:     branchName,
     task,
     launchedAt: new Date().toISOString(),
   });
-  console.log(`  ${green('✓')} Session logged to TASKS_HISTORY.md`);
+  if (historyOk) {
+    console.log(`  ${green('✓')} Session logged to TASKS_HISTORY.md`);
+  } else {
+    console.log(`  ${yellow('!')} TASKS_HISTORY.md session entry failed to write — continuing`);
+  }
 
   // ── Write package.json proxy ──────────────────────────────────────────────────
 

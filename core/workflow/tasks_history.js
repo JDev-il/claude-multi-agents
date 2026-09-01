@@ -34,7 +34,11 @@ Task     : ${task}
 
   try {
     fs.appendFileSync(historyPath, entry, 'utf8');
-  } catch { /* best-effort */ }
+    return true;
+  } catch (e) {
+    console.log(`  ! TASKS_HISTORY.md write failed (writeSessionEntry): ${e.message}`);
+    return false;
+  }
 };
 
 // ── Update session status on completion ───────────────────────────────────────
@@ -64,7 +68,11 @@ const updateSessionStatus = (ROOT, { branch, status, completedAt, notes }) => {
 
     try {
       fs.writeFileSync(historyPath, content, 'utf8');
-    } catch { /* best-effort */ }
+      return true;
+    } catch (e) {
+      console.log(`  ! TASKS_HISTORY.md write failed (updateSessionStatus): ${e.message}`);
+      return false;
+    }
   }
 };
 
@@ -94,7 +102,11 @@ const appendUserOverride = (ROOT, { branch, timestamp, input, deviation, action 
     );
     try {
       fs.writeFileSync(historyPath, content, 'utf8');
-    } catch { /* best-effort */ }
+      return true;
+    } catch (e) {
+      console.log(`  ! TASKS_HISTORY.md write failed (appendUserOverride): ${e.message}`);
+      return false;
+    }
   }
 };
 

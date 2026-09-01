@@ -161,11 +161,14 @@ const updateBuildState = (branch, status, notes = '') => {
   fs.writeFileSync(buildStatePath, content, 'utf8');
 
   // Update TASKS_HISTORY.md
-  tasksHistory.updateSessionStatus(ROOT, {
+  const historyOk = tasksHistory.updateSessionStatus(ROOT, {
     branch,
     status,
     completedAt: new Date().toISOString(),
   });
+  if (!historyOk) {
+    console.log(yellow('  ! TASKS_HISTORY.md status update failed to write — continuing'));
+  }
 
   try {
     execSync('git add BUILD_STATE.md', { cwd: ROOT, stdio: 'pipe' });
