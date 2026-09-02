@@ -226,9 +226,54 @@ const main = async () => {
   const scopeJsonPath   = path.join(worktreePath, 'scope.json');
   const scopePolicyPath = path.join(ROOT, '.scaffold', 'scope-policy.json');
 
-  if (fs.existsSync(scopeJsonPath) && fs.existsSync(scopePolicyPath)) {
-    const scopeMeta   = JSON.parse(fs.readFileSync(scopeJsonPath, 'utf8'));
-    const scopePolicy = JSON.parse(fs.readFileSync(scopePolicyPath, 'utf8'));
+  if (!fs.existsSync(scopeJsonPath)) {
+    // Worktrees launched on <= v1.2.6 predate scope.json. Regenerate it
+    // deterministically from the tracking slot that owns this branch.
+    // Regeneration applies to ABSENCE only - a malformed existing file
+    // still hard-blocks below, and no tracking match hard-blocks here.
+    let regenSlot = null;
+    try {
+      const regenTracking = guards.loadTracking(ROOT, config);
+      for (const [trkScope, agents] of Object.entries(regenTracking || {})) {
+        for (const [trkAgent, slot] of Object.entries(agents || {})) {
+          if (slot && slot.branch === branchName) {
+            regenSlot = { scope: trkScope, agent: trkAgent, branch: slot.branch };
+          }
+        }
+      }
+    } catch { /* fall through to hard block */ }
+
+    if (!regenSlot) {
+      console.log('\n' + red('  ✗ scope.json not found and no tracking slot owns branch ' + branchName + ' - merge blocked.'));
+      console.log(dim('  Scope validation cannot run without scope metadata.'));
+      console.log(dim('  Restore scope.json manually in the worktree, then re-run npm run complete.\n'));
+      return;
+    }
+
+    fs.writeFileSync(
+      scopeJsonPath,
+      JSON.stringify({ agent: regenSlot.agent, scope: regenSlot.scope, branch: regenSlot.branch, policy: regenSlot.scope }, null, 2),
+      'utf8'
+    );
+    console.log('  ' + yellow('!') + ' scope.json was missing (pre-v1.2.7 worktree) - regenerated from tracking state (' + regenSlot.scope + '/' + regenSlot.agent + ')');
+  }
+  if (!fs.existsSync(scopePolicyPath)) {
+    console.log('\n' + red('  ✗ .scaffold/scope-policy.json not found - merge blocked.'));
+    console.log(dim('  Projects initialized before v1.0.54 predate scope policies.'));
+    console.log(dim('  Recovery: restore the file from git history, or re-run multi-agents init.\n'));
+    return;
+  }
+
+  let scopeMeta, scopePolicy;
+  try {
+    scopeMeta   = JSON.parse(fs.readFileSync(scopeJsonPath, 'utf8'));
+    scopePolicy = JSON.parse(fs.readFileSync(scopePolicyPath, 'utf8'));
+  } catch (parseErr) {
+    console.log('\n' + red('  ✗ Scope metadata is malformed - merge blocked.'));
+    console.log(dim('  ' + (parseErr && parseErr.message ? parseErr.message : String(parseErr))));
+    console.log(dim('  Fix or restore the file, then re-run npm run complete.\n'));
+    return;
+  }
 
     const { allowed, blocked } = resolveScope(scopePolicy, scopeMeta.scope, scopeMeta.agent, config.scaffolded);
 
@@ -246,9 +291,6 @@ const main = async () => {
     }
 
     console.log('  ' + green('✓') + ' Scope validation passed (' + changedFiles.length + ' files checked)');
-  } else {
-    console.log('  ' + dim('ℹ scope.json or scope-policy.json not found - skipping validation'));
-  }
 
   // ── Check TASK.md status ──────────────────────────────────────────────────────
 
@@ -325,9 +367,10 @@ const main = async () => {
       }
 
       if (!stagedWithScope) {
-        // Fallback — no scope info, stage everything
-        execSync('git add .', { cwd: worktreePath, stdio: 'pipe' });
-        console.log(`  ${yellow('!')} No scope info found - staged all files`);
+        console.log('\n' + red('  ✗ Cannot determine scope-allowed staging patterns - auto-staging refused.'));
+        console.log(dim('  Uncommitted changes were NOT staged or committed.'));
+        console.log(dim('  Commit your changes manually inside the worktree, then re-run npm run complete.\n'));
+        return;
       }
 
       execSync(`git commit -m "feat: task completion commit [${branchName}]"`, { cwd: worktreePath, stdio: 'pipe' });
