@@ -1785,6 +1785,15 @@ Mark each step complete. Only proceed to the task below when all are checked.
   );
   console.log(`  ${green('✓')} .claude-scope written`);
 
+  // ── Write scope.json — read by complete.js merge gate ────────────────────────
+
+  fs.writeFileSync(
+    path.join(worktreePath, 'scope.json'),
+    JSON.stringify({ agent, scope: project, branch: branchName, policy: project }, null, 2),
+    'utf8'
+  );
+  console.log(`  ${green('✓')} scope.json written`);
+
   // ── Generate IDE settings ─────────────────────────────────────────────────────
 
   const excludedFolders = {
