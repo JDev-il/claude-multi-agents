@@ -1,7 +1,7 @@
 {
   "name": "multi-agents-cli",
   "version": "1.2.6",
-  "description": "Multi-agent workflow orchestration for Claude Code — isolated git worktrees, structured state tracking, autonomous task chaining",
+  "description": "Multi-agent workflow orchestration for Claude Code — isolated git worktrees, structured state tracking, state-aware agent handoffs",
   "keywords": [
     "claude-code",
     "multi-agents",

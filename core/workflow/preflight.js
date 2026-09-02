@@ -93,7 +93,7 @@ const assess = ({ ROOT, scope, agent, branchName, intent }) => {
   const { allowed, blocked } = resolveScope(scopePolicy, scope, agent, scaffolded);
   const inScopeFiles         = findInScope(affectedFiles, allowed, blocked);
 
-  // ── No scope overlap — silent rebase path ───────────────────────────────
+  // ── No scope overlap — proceed (no rebase performed) ─────────────────────
   if (inScopeFiles.length === 0) {
     return {
       decision: 'proceed',

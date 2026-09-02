@@ -2,7 +2,7 @@
 
 A structured workflow tool that orchestrates multiple Claude Code agents working in parallel - each isolated in its own git worktree, owning a specific scope of the codebase.
 
-Instead of one agent doing everything in a single bloated session, each agent stays focused, token-efficient, and conflict-free. Shared state files keep them coordinated without manual intervention.
+Instead of one session carrying the entire build, each agent carries a narrower, domain-specific context and stays token-efficient. Shared state files carry progress between sessions and drive prerequisite-aware next-agent recommendations.
 
 **The result:** faster builds, lower token spend, and a clean git history - without sacrificing reliability or context.
 

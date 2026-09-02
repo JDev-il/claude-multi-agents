@@ -1194,10 +1194,17 @@ const main = async () => {
           }
           console.log('');
           const escalateIdx = await arrowSelect('How would you like to proceed?', [
-            { label: 'Rebase and proceed (system recommendation)' },
+            { label: 'Proceed (manual rebase required, recommended path)' },
             { label: 'Start fresh on a new branch' },
             { label: 'Cancel' },
           ], rl);
+          if (escalateIdx === 0) {
+            console.log('\n  ' + yellow('!') + ' No automatic rebase is performed.');
+            console.log(dim('  Sync the worktree manually before continuing work:'));
+            console.log(dim('    1. cd ' + completedWorktreePath));
+            console.log(dim('    2. git rebase main'));
+            console.log('');
+          }
           if (escalateIdx === 2) { rl.close(); return; }
           if (escalateIdx === 1) {
             resumeMode = false;
