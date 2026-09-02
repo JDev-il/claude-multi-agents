@@ -1499,6 +1499,11 @@ const main = async () => {
         // Framework files
         const beScope = generateClaudeScope({ project: 'backend', agent: 'INIT', branchName: beBranchName, worktreePath: beWorktreePath, outputMode: outputMode || 'full' });
         fs.writeFileSync(path.join(beWorktreePath, '.claude-scope'), beScope, 'utf8');
+        fs.writeFileSync(
+          path.join(beWorktreePath, 'scope.json'),
+          JSON.stringify({ agent: 'INIT', scope: 'backend', branch: beBranchName, policy: 'backend' }, null, 2),
+          'utf8'
+        );
 
         const beTask = AGENT_DESCRIPTIONS.backend?.INIT || 'scaffolds backend architecture, folder structure, DB setup, wiring config and contracts';
         const beRemoteSetupNeeded = fs.existsSync(path.join(ROOT, '.scaffold', '.remote-setup-needed'));
