@@ -239,6 +239,12 @@ After each component:
 
 ---
 
+### TODO Marker Attribution
+
+When leaving TODO markers in `.tsx`/`.jsx` files for unfinished wiring:
+- Attribute them to the UI agent (the file owner), e.g. `// TODO(UI): wire useFeature into this component`
+- Never attribute component-file work to LOGIC. LOGIC delivers hooks and stores; UI wires them into components. LOGIC is prohibited from editing `.tsx`/`.jsx` files, so a marker addressed to LOGIC inside one is a contradiction no future session can act on.
+
 ## Communication
 
 The agent stops and surfaces output in these situations:
