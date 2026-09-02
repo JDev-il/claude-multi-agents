@@ -830,32 +830,37 @@ Before starting any task, verify:
   // ── Auto-commit ───────────────────────────────────────────────────────────────
 
   let configCommitOk = false;
+  let commitFailReason = '';
   try {
     execSync('git add .', { cwd: ROOT, stdio: 'pipe' });
-    execSync('git commit --no-gpg-sign -m "init: project configuration"', { cwd: ROOT, stdio: 'pipe' });
-    console.log(`  ${green('✓')} Project configuration committed`);
-    configCommitOk = true;
-  } catch {
-    console.log(`  ${yellow('!')} Could not auto-commit.`);
-  }
-
-  if (!configCommitOk) {
-    try {
-      const commitCount = execSync('git rev-list --count HEAD', { cwd: ROOT, encoding: 'utf8', stdio: 'pipe' }).trim();
-      configCommitOk = parseInt(commitCount, 10) > 0;
-    } catch { configCommitOk = false; }
+    let headBefore = null;
+    try { headBefore = execSync('git rev-parse HEAD', { cwd: ROOT, encoding: 'utf8', stdio: 'pipe' }).trim(); } catch { /* unborn HEAD */ }
+    // --no-verify: on re-init the pre-commit hook from a prior init blocks
+    // main commits; this is the framework committing its own configuration.
+    execSync('git commit --no-gpg-sign --no-verify -m "init: project configuration"', { cwd: ROOT, stdio: 'pipe' });
+    const headAfter = execSync('git rev-parse HEAD', { cwd: ROOT, encoding: 'utf8', stdio: 'pipe' }).trim();
+    configCommitOk = Boolean(headAfter) && headAfter !== headBefore;
+    if (configCommitOk) console.log(`  ${green('✓')} Project configuration committed`);
+    else commitFailReason = 'git commit ran but HEAD did not advance';
+  } catch (commitErr) {
+    const errOut = (commitErr.stderr ? commitErr.stderr.toString() : '') + (commitErr.stdout ? commitErr.stdout.toString() : '');
+    if (/nothing to commit|nothing added to commit|no changes added/i.test(errOut)) {
+      configCommitOk = true;
+      console.log(`  ${dim('ℹ No configuration changes to commit - already up to date')}`);
+    } else {
+      commitFailReason = errOut.trim() || commitErr.message;
+    }
   }
 
   if (!configCommitOk) {
     console.error(`
-  ✖ Project could not be committed to git.
+  ✖ Project configuration could not be committed to git.
 
-  This is usually caused by missing git identity configuration. Run:
+  Git reported:
+    ${commitFailReason.split('\n').join('\n    ')}
 
-    git config --global user.name "Your Name"
-    git config --global user.email "you@example.com"
-
-  Then run: git add . && git commit -m "init: project configuration"
+  Fix the underlying issue, then run:
+    git add . && git commit -m "init: project configuration"
   And re-run: npm run agent
 `);
     process.exit(1);

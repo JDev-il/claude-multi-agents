@@ -76,7 +76,19 @@ const main = async () => {
   const stamped   = getStampedVersion();
   const installed = getCurrentVersion();
 
-  if (installed && installed !== stamped) {
+  const isNewer = (a, b) => {
+    const pa = String(a).split('.').map(n => parseInt(n, 10) || 0);
+    const pb = String(b).split('.').map(n => parseInt(n, 10) || 0);
+    for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+      if ((pa[i] || 0) > (pb[i] || 0)) return true;
+      if ((pa[i] || 0) < (pb[i] || 0)) return false;
+    }
+    return false;
+  };
+
+  // Update ONLY when installed is strictly newer (or no stamp exists).
+  // An older installed CLI must never overwrite newer project scripts.
+  if (installed && (!stamped || isNewer(installed, stamped))) {
     // Show spinner while updating
     const frames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
     let i = 0;
