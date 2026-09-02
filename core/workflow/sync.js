@@ -396,7 +396,7 @@ async function sync(opts = {}) {
   }
   if (orphans.length) {
     console.log(yellow('  orphaned worktrees (merged, safe to remove):'));
-    orphans.forEach(o => console.log(dim('    \u00b7 ') + o + dim('   git worktree remove <path>')));
+    orphans.forEach(o => console.log(dim('    \u00b7 ') + o + dim('   git worktree remove --force <path>')));
   }
   if (decisions.length) {
     console.log(yellow('  needs your attention:'));

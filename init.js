@@ -330,7 +330,7 @@ const main = async () => {
       if (res.value === '1') {
         separator();
         console.log(yellow('  ⚠ This will permanently delete the entire project.'));
-        console.log(dim('  All branches, worktrees, files and git history will be removed.\n'));
+        console.log(dim('  All worktrees, project files and framework state will be removed. The .git repository itself is preserved.\n'));
         const confirm = await prompts({
           type:    'select',
           name:    'value',
