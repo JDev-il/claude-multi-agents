@@ -218,7 +218,18 @@ async function sync(opts = {}) {
     if (!isActive(slot) && slot.status !== 'MISSING') return;
     if (mergedBranches.includes(slot.branch)) {
       const wt = worktrees.find(w => w.branch === slot.branch);
-      if (wt && worktreeHealthy(wt.path)) orphans.push(`${scope}/${agent} -> ${wt.path}`);
+      // Guard: a zero-commit agent branch is topologically "merged" (its HEAD
+      // still equals main), so Git cannot distinguish merged from never-diverged.
+      // Require session evidence: if the worktree is alive and its TASK.md is
+      // not marked [x] COMPLETED, this is a live session - leave it ACTIVE.
+      const liveWtPath = wt && worktreeHealthy(wt.path) ? wt.path : null;
+      if (liveWtPath) {
+        const taskPath = findTaskMd(liveWtPath, scope);
+        let sessionDone = false;
+        try { sessionDone = taskPath ? fs.readFileSync(taskPath, 'utf8').includes('[x] COMPLETED') : false; } catch {}
+        if (!sessionDone) return; // live session - topology alone is not completion evidence
+      }
+      if (liveWtPath) orphans.push(`${scope}/${agent} -> ${liveWtPath}`);
       slot.status = 'COMPLETED';
       if (!slot.completedAt) slot.completedAt = new Date().toISOString();
       slot.worktreePath = null;
