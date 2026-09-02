@@ -904,7 +904,7 @@ fi
   console.log(`${yellow('     ⚠ If you commit directly to main yourself, you bypass the framework')}`);
   console.log(`${yellow('       and break task tracking for any active agent branches')}\n`);
 
-  console.log(`  ${dim('2.')} ${bold('Shared Orchestration')}`);
+  console.log(`  ${dim('2.')} ${bold('Shared Orchestration')} ${dim('(experimental)')}`);
   console.log(`${dim('     · You and agents co-build — each owning a defined part of the codebase')}`);
   console.log(`${dim('     · Agent tasks run in git worktrees; your work happens directly in the project')}`);
   console.log(`${dim('     · Agent tasks are token-efficient; your tasks cost only what you prompt')}`);
@@ -916,7 +916,7 @@ fi
   trajectoryLoop: while (true) {
     const trajIdx = await arrowSelect('How do you want to build?', [
       { label: bold('Multi-Agent Driven Orchestration') },
-      { label: bold('Shared Orchestration') },
+      { label: `${bold('Shared Orchestration')} ${dim('(experimental)')}` },
     ]);
     trajectory = String(trajIdx + 1);
 
@@ -941,7 +941,7 @@ fi
     console.log(`${dim('     · Faster builds and lower token spend than a single long session')}`);
     console.log(`${yellow('     ⚠ If you commit directly to main yourself, you bypass the framework')}`);
     console.log(`${yellow('       and break task tracking for any active agent branches')}\n`);
-    console.log(`  ${dim('2.')} ${bold('Shared Orchestration')}`);
+    console.log(`  ${dim('2.')} ${bold('Shared Orchestration')} ${dim('(experimental)')}`);
     console.log(`${dim('     · You and agents co-build — each owning a defined part of the codebase')}`);
     console.log(`${dim('     · Agent tasks run in git worktrees; your work happens directly in the project')}`);
     console.log(`${dim('     · Agent tasks are token-efficient; your tasks cost only what you prompt')}`);

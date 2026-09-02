@@ -82,7 +82,7 @@ Choose during `multi-agents init`:
 **Multi-Agent Driven Orchestration** *(recommended)*
 Every task starts with `npm run agent`. Each agent works in its own git worktree - an isolated branch and folder that merges back into main via `npm run complete`. Faster builds and lower token spend than a single long session.
 
-**Shared Orchestration**
+**Shared Orchestration** *(experimental — less battle-tested than the multi-agent-driven path)*
 You and agents co-build - each owning a defined part of the codebase. Agent tasks run in git worktrees; your work happens directly in the project. Define boundaries before work begins.
 
 ---
